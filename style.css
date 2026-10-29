@@ -46,3 +46,11 @@ h1 { font-size: 20px; letter-spacing: 2px; margin: 0; color: #8ab4ff; }
   background: #3a7bd5; color: #fff; border: none; border-radius: 6px;
 }
 #resetBtn:hover { background: #4a8be5; }
+.switch-row select {
+  background: #1a2233;
+  color: #e0e6f0;
+  border: 1px solid #2a3550;
+  border-radius: 4px;
+  padding: 2px 4px;
+  font-size: 12px;
+}
