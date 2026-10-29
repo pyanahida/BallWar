@@ -1,26 +1,53 @@
-<div id="switches">
-  <label class="switch-row">
-    <span>Ball A</span>
-    <select id="typeA">
-      <option value="common">Common</option>
-      <option value="spear">Spear</option>
-      <option value="void">Void</option>
-    </select>
-    <span class="switch">
-      <input type="checkbox" id="switchA" checked>
-      <span class="slider"></span>
-    </span>
-  </label>
-  <label class="switch-row">
-    <span>Ball B</span>
-    <select id="typeB">
-      <option value="common">Common</option>
-      <option value="spear" selected>Spear</option>
-      <option value="void">Void</option>
-    </select>
-    <span class="switch">
-      <input type="checkbox" id="switchB" checked>
-      <span class="slider"></span>
-    </span>
-  </label>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Ball War 1.1</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <h1>Ball War</h1>
+  
+  <div id="controls">
+    <div class="player-setup">
+      <label>Ball A</label>
+      <select id="typeA">
+        <option value="common">Common</option>
+        <option value="spear">Spear</option>
+        <option value="void">Void</option>
+      </select>
+      <label class="toggle">
+        <input type="checkbox" id="enableA" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="player-setup">
+      <label>Ball B</label>
+      <select id="typeB">
+        <option value="common">Common</option>
+        <option value="spear" selected>Spear</option>
+        <option value="void">Void</option>
+      </select>
+      <label class="toggle">
+        <input type="checkbox" id="enableB" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <button id="startBtn">Start / Reset</button>
+  </div>
+
+  <div id="arena-wrap">
+    <svg id="arena" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet"></svg>
+  </div>
 </div>
+
+<script src="js/ball.js"></script>
+<script src="js/physics.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
