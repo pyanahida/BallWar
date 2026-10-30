@@ -29,6 +29,21 @@ const BALL_TYPES = {
     damage: 1,
     texture: 'res/void.png',
   },
+  steel_coil: {
+    hp: 100,
+    damage: 1,
+    texture: 'res/steel_coil.png',
+    // 动态伤害计算：如果敌人距离边界 < 30，造成 3 伤害；否则 1 伤害
+    getDamage(ball, enemy) {
+      const distToLeft = enemy.x;
+      const distToRight = FIELD.size - enemy.x;
+      const distToTop = enemy.y;
+      const distToBottom = FIELD.size - enemy.y;
+      const minDistToEdge = Math.min(distToLeft, distToRight, distToTop, distToBottom);
+      
+      return minDistToEdge < 30 ? 3 : 1;
+    }
+  },
 };
 
 let ballSeq = 0;
