@@ -5,9 +5,6 @@ const arena = document.getElementById('arena');
 function buildScene(balls) {
   arena.innerHTML = '';
   
-  const defs = document.createElementNS(SVG_NS, 'defs');
-  arena.appendChild(defs);
-
   const rect = document.createElementNS(SVG_NS, 'rect');
   rect.setAttribute('x', 0);
   rect.setAttribute('y', 0);
@@ -19,32 +16,19 @@ function buildScene(balls) {
   arena.appendChild(rect);
 
   for (const ball of balls) {
-    if (document.getElementById(`pat-${ball.id}`)) continue;
-    
-    const pat = document.createElementNS(SVG_NS, 'pattern');
-    pat.setAttribute('id', `pat-${ball.id}`);
-    pat.setAttribute('width', RADIUS * 2);
-    pat.setAttribute('height', RADIUS * 2);
-    pat.setAttribute('patternUnits', 'userSpaceOnUse');
-    
+    const g = document.createElementNS(SVG_NS, 'g');
+    g.setAttribute('data-id', ball.id);
+
+    // 直接使用 image 渲染贴图，不再使用 pattern
     const img = document.createElementNS(SVG_NS, 'image');
     img.setAttribute('href', ball.def.texture);
     img.setAttribute('width', RADIUS * 2);
     img.setAttribute('height', RADIUS * 2);
-    img.setAttribute('preserveAspectRatio', 'xMidYMid slice');
-    
-    pat.appendChild(img);
-    defs.appendChild(pat);
-  }
-
-  for (const ball of balls) {
-    const g = document.createElementNS(SVG_NS, 'g');
-    g.setAttribute('data-id', ball.id);
-
-    const circle = document.createElementNS(SVG_NS, 'circle');
-    circle.setAttribute('r', RADIUS);
-    circle.setAttribute('fill', `url(#pat-${ball.id})`);
-    g.appendChild(circle);
+    img.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+    // 初始化位置
+    img.setAttribute('x', ball.x - RADIUS);
+    img.setAttribute('y', ball.y - RADIUS);
+    g.appendChild(img);
 
     const text = document.createElementNS(SVG_NS, 'text');
     text.setAttribute('text-anchor', 'middle');
@@ -55,6 +39,8 @@ function buildScene(balls) {
     text.setAttribute('stroke', '#000000');
     text.setAttribute('stroke-width', '0.5');
     text.setAttribute('paint-order', 'stroke');
+    text.setAttribute('x', ball.x);
+    text.setAttribute('y', ball.y);
     text.textContent = Math.ceil(ball.hp);
     g.appendChild(text);
 
@@ -99,10 +85,15 @@ function updateScene(balls) {
       g.style.display = 'none';
       continue;
     }
-    const circle = g.querySelector('circle');
-    circle.setAttribute('cx', ball.x);
-    circle.setAttribute('cy', ball.y);
+    
+    // 更新 image 的位置，让它跟着球移动
+    const img = g.querySelector('image');
+    if (img) {
+      img.setAttribute('x', ball.x - RADIUS);
+      img.setAttribute('y', ball.y - RADIUS);
+    }
 
+    // 更新血量文字位置
     const text = g.querySelector('text');
     text.setAttribute('x', ball.x);
     text.setAttribute('y', ball.y);
