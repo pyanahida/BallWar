@@ -5,11 +5,9 @@ const arena = document.getElementById('arena');
 function buildScene(balls) {
   arena.innerHTML = '';
   
-  // 定义 <defs> 用于存放各种球的贴图
   const defs = document.createElementNS(SVG_NS, 'defs');
   arena.appendChild(defs);
 
-  // 场边界
   const rect = document.createElementNS(SVG_NS, 'rect');
   rect.setAttribute('x', 0);
   rect.setAttribute('y', 0);
@@ -20,7 +18,6 @@ function buildScene(balls) {
   rect.setAttribute('stroke-width', '0.5');
   arena.appendChild(rect);
 
-  // 为每个球生成独立的贴图 pattern
   for (const ball of balls) {
     if (document.getElementById(`pat-${ball.id}`)) continue;
     
@@ -40,7 +37,6 @@ function buildScene(balls) {
     defs.appendChild(pat);
   }
 
-  // 生成球体元素和血量文字
   for (const ball of balls) {
     const g = document.createElementNS(SVG_NS, 'g');
     g.setAttribute('data-id', ball.id);
@@ -67,6 +63,35 @@ function buildScene(balls) {
 }
 
 function updateScene(balls) {
+  // 清除旧的蛛丝线
+  const oldWebs = arena.querySelectorAll('.spider-web-line');
+  oldWebs.forEach(w => w.remove());
+
+  const firstBallG = arena.querySelector('g[data-id]');
+
+  for (const ball of balls) {
+    if (ball.type === 'spider_web' && ball.webs && ball.alive) {
+      for (const web of ball.webs) {
+        const line = document.createElementNS(SVG_NS, 'line');
+        line.setAttribute('x1', ball.x);
+        line.setAttribute('y1', ball.y);
+        line.setAttribute('x2', web.x);
+        line.setAttribute('y2', web.y);
+        line.setAttribute('stroke', '#FFF');
+        // 冷却中变细/变半透明
+        line.setAttribute('stroke-width', web.cooldown > 0 ? '0.3' : '0.6');
+        line.setAttribute('stroke-opacity', web.cooldown > 0 ? '0.5' : '1');
+        line.setAttribute('class', 'spider-web-line');
+        
+        if (firstBallG) {
+          arena.insertBefore(line, firstBallG);
+        } else {
+          arena.appendChild(line);
+        }
+      }
+    }
+  }
+
   for (const ball of balls) {
     const g = arena.querySelector(`g[data-id="${ball.id}"]`);
     if (!g) continue;
