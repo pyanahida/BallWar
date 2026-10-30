@@ -1,6 +1,6 @@
 // Ball definitions & state
 const FIELD = { size: 100 };
-window.V_BASE = 18; // base speed, units per second (now mutable)
+window.V_BASE = 18; // base speed, units per second
 const RADIUS = 7.5; // diameter 15
 
 const BALL_TYPES = {
@@ -37,7 +37,6 @@ const BALL_TYPES = {
       const distToTop = enemy.y;
       const distToBottom = FIELD.size - enemy.y;
       const minDistToEdge = Math.min(distToLeft, distToRight, distToTop, distToBottom);
-      
       return minDistToEdge < 30 ? 3 : 1;
     }
   },
@@ -46,12 +45,27 @@ const BALL_TYPES = {
     damage: 5,
     texture: 'res/one_way_mirror.png',
     onBounce(ball) {
-      // 碰到墙壁扣 1 点血
       ball.hp -= 1;
       if (ball.hp <= 0) {
         ball.hp = 0;
         ball.alive = false;
       }
+    }
+  },
+  spider_web: {
+    hp: 100,
+    damage: 0,
+    texture: 'res/spider_web.png',
+    onBounce(ball, bounceX, bounceY) {
+      if (!ball.webs) ball.webs = [];
+      if (ball.webs.length >= 10) ball.webs.shift();
+      
+      ball.webs.push({
+        x: bounceX,
+        y: bounceY,
+        hp: 3,
+        cooldown: 0 // 1秒冷却（单位：毫秒）
+      });
     }
   }
 };
@@ -60,7 +74,7 @@ let ballSeq = 0;
 
 function createBall(typeKey, x, y, angle) {
   const def = BALL_TYPES[typeKey];
-  return {
+  const ball = {
     id: ballSeq++,
     type: typeKey,
     def,
@@ -73,6 +87,8 @@ function createBall(typeKey, x, y, angle) {
     damage: def.damage,
     alive: true,
   };
+  if (typeKey === 'spider_web') ball.webs = [];
+  return ball;
 }
 
 function randomBall(typeKey) {
