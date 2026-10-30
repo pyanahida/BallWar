@@ -125,7 +125,8 @@ function stepAll(balls, dt) {
           x: b.x,
           y: b.y,
           radius: 20,
-          timer: 1.0
+          timer: 1.0,
+          ownerId: b.id
         });
       }
     }
@@ -170,7 +171,7 @@ function stepAll(balls, dt) {
     for (const b of balls) {
       if (!b.alive) continue;
       // 敌人进入陷阱范围
-      if (b.type !== 'trap' || b.id !== trap.ownerId) {
+      if (b.id !== trap.ownerId) {
         const dist = Math.hypot(trap.x - b.x, trap.y - b.y);
         if (dist < trap.radius + RADIUS) {
           b.hp -= 10;
