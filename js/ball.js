@@ -58,7 +58,6 @@ const BALL_TYPES = {
     texture: 'res/spider_web.png',
     onBounce(ball, bounceX, bounceY) {
       if (!ball.webs) ball.webs = [];
-      if (ball.webs.length >= 10) ball.webs.shift();
       
       ball.webs.push({
         x: bounceX,
