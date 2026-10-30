@@ -20,14 +20,11 @@ function spawnBalls() {
   window.V_BASE = 18 * multiplier; 
 
   if (enableA.checked) {
-    const ball = randomBall(typeA.value);
-    // randomBall 中已经使用了最新的 window.V_BASE 计算速度
-    balls.push(ball);
+    balls.push(randomBall(typeA.value));
   }
   
   if (enableB.checked) {
-    const ball = randomBall(typeB.value);
-    balls.push(ball);
+    balls.push(randomBall(typeB.value));
   }
 
   buildScene(balls);
