@@ -8,11 +8,28 @@ const typeB = document.getElementById('typeB');
 const enableA = document.getElementById('enableA');
 const enableB = document.getElementById('enableB');
 const startBtn = document.getElementById('startBtn');
+const speedInput = document.getElementById('speedMultiplier');
 
 function spawnBalls() {
   balls = [];
-  if (enableA.checked) balls.push(randomBall(typeA.value));
-  if (enableB.checked) balls.push(randomBall(typeB.value));
+  
+  let multiplier = parseFloat(speedInput.value);
+  if (isNaN(multiplier) || multiplier <= 0) {
+    multiplier = 1; 
+  }
+  window.V_BASE = 18 * multiplier; 
+
+  if (enableA.checked) {
+    const ball = randomBall(typeA.value);
+    // randomBall 中已经使用了最新的 window.V_BASE 计算速度
+    balls.push(ball);
+  }
+  
+  if (enableB.checked) {
+    const ball = randomBall(typeB.value);
+    balls.push(ball);
+  }
+
   buildScene(balls);
 }
 
@@ -20,7 +37,7 @@ function loop(t) {
   if (lastTime === 0) lastTime = t;
   let dt = (t - lastTime) / 1000;
   lastTime = t;
-  // 限制最大时间步长，防止切后台回来后球直接飞出场外
+  
   if (dt > 0.05) dt = 0.05;
 
   stepAll(balls, dt);
@@ -36,8 +53,7 @@ function startGame() {
   rafId = requestAnimationFrame(loop);
 }
 
-// 绑定开始按钮
 startBtn.addEventListener('click', startGame);
 
-// 初始化第一把场景（但不开始运动，等待用户点击）
+// 初始化第一把场景
 spawnBalls();
