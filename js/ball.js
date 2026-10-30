@@ -66,6 +66,11 @@ const BALL_TYPES = {
         cooldown: 0 // 1秒冷却（单位：毫秒）
       });
     }
+  },
+  onion: {
+    hp: 100,
+    damage: 5,
+    texture: 'res/onion.png'
   }
 };
 
@@ -85,8 +90,10 @@ function createBall(typeKey, x, y, angle) {
     maxHp: def.hp,
     damage: def.damage,
     alive: true,
+    cryingTimer: 0
   };
   if (typeKey === 'spider_web') ball.webs = [];
+  if (typeKey === 'onion') ball.shootTimer = 3;
   return ball;
 }
 
