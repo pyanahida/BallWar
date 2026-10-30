@@ -1,6 +1,7 @@
 // Game loop, state control
 let balls = [];
-window.projectiles = []; // 挂载到全局，方便physics使用
+window.projectiles = [];
+window.traps = [];
 let lastTime = 0;
 let rafId = null;
 let gameState = 'idle'; // 'idle', 'playing', 'paused', 'gameover'
@@ -28,19 +29,14 @@ function formatBallName(key) {
 function spawnBalls() {
   balls = [];
   window.projectiles = [];
+  window.traps = [];
   
   let multiplier = parseFloat(speedInput.value);
-  if (isNaN(multiplier) || multiplier <= 0) {
-    multiplier = 1; 
-  }
+  if (isNaN(multiplier) || multiplier <= 0) multiplier = 1; 
   window.V_BASE = 18 * multiplier; 
 
-  if (enableA.checked) {
-    balls.push(randomBall(typeA.value));
-  }
-  if (enableB.checked) {
-    balls.push(randomBall(typeB.value));
-  }
+  if (enableA.checked) balls.push(randomBall(typeA.value));
+  if (enableB.checked) balls.push(randomBall(typeB.value));
 
   buildScene(balls);
 }
@@ -71,7 +67,7 @@ function loop(t) {
     if (dt > 0.05) dt = 0.05;
 
     stepAll(balls, dt);
-    updateScene(balls, window.projectiles);
+    updateScene(balls, window.projectiles, window.traps);
     checkWinCondition();
   } else {
     lastTime = t;
@@ -114,6 +110,7 @@ function quitToMenu() {
   
   balls = [];
   window.projectiles = [];
+  window.traps = [];
   buildScene(balls);
   pauseOverlay.classList.add('hidden');
   gameoverOverlay.classList.add('hidden');
