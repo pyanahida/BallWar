@@ -65,7 +65,7 @@ select {
   outline: none;
 }
 
-/* 自定义开关样式，彻底隐藏原生勾选框 */
+/* 自定义开关样式 */
 .toggle {
   position: relative;
   display: inline-block;
@@ -127,7 +127,7 @@ button:active {
   background: #2a5bb5;
 }
 
-/* 修复移动端高度塌陷问题，使用 vmin 保证是正方形且不出界 */
+/* 修复移动端高度塌陷，使用 vmin 保证正方形 */
 #arena-wrap {
   width: 90vmin;
   height: 90vmin;
