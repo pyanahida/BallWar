@@ -119,14 +119,13 @@ button {
   border: none;
   border-radius: 8px;
   transition: background 0.2s;
-  width: 100%;
-  margin-top: 5px;
 }
 
 button:active {
   background: #2a5bb5;
 }
 
+/* 场地容器，作为遮罩层定位参考 */
 #arena-wrap {
   width: 90vmin;
   height: 90vmin;
@@ -143,4 +142,55 @@ button:active {
   width: 100%;
   height: 100%;
   display: block;
+}
+
+/* 遮罩层样式 */
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(10, 15, 30, 0.85);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+  backdrop-filter: blur(3px);
+}
+
+.overlay-content {
+  background: #1a2233;
+  padding: 30px;
+  border-radius: 12px;
+  border: 1px solid #3a7bd5;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  width: 80%;
+  max-width: 300px;
+}
+
+.overlay-content h2 {
+  margin: 0;
+  color: #8ab4ff;
+  font-size: 20px;
+  word-break: break-word;
+}
+
+.overlay-content button {
+  width: 100%;
+}
+
+#quitBtn, #backToMenuBtn {
+  background: #333c50;
+}
+
+#quitBtn:active, #backToMenuBtn:active {
+  background: #1a2233;
+}
+
+.hidden {
+  display: none !important;
 }
