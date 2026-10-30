@@ -1,5 +1,6 @@
 // Game loop, state control
 let balls = [];
+window.projectiles = []; // 挂载到全局，方便physics使用
 let lastTime = 0;
 let rafId = null;
 let gameState = 'idle'; // 'idle', 'playing', 'paused', 'gameover'
@@ -26,6 +27,7 @@ function formatBallName(key) {
 
 function spawnBalls() {
   balls = [];
+  window.projectiles = [];
   
   let multiplier = parseFloat(speedInput.value);
   if (isNaN(multiplier) || multiplier <= 0) {
@@ -44,7 +46,7 @@ function spawnBalls() {
 }
 
 function checkWinCondition() {
-  if (balls.length <= 1) return; // 单球不判断胜利
+  if (balls.length <= 1) return;
   
   const aliveBalls = balls.filter(b => b.alive);
   if (aliveBalls.length === 1) {
@@ -53,7 +55,6 @@ function checkWinCondition() {
     winnerText.textContent = `${formatBallName(aliveBalls[0].type)} Wins!`;
     gameoverOverlay.classList.remove('hidden');
   } else if (aliveBalls.length === 0) {
-    // 同归于尽
     gameState = 'gameover';
     pauseBtn.style.display = 'none';
     winnerText.textContent = "Draw!";
@@ -70,10 +71,10 @@ function loop(t) {
     if (dt > 0.05) dt = 0.05;
 
     stepAll(balls, dt);
-    updateScene(balls);
+    updateScene(balls, window.projectiles);
     checkWinCondition();
   } else {
-    lastTime = t; // 暂停或结束时，防止恢复时时间跳跃
+    lastTime = t;
   }
 
   rafId = requestAnimationFrame(loop);
@@ -89,7 +90,6 @@ function startGame() {
   lastTime = 0;
   rafId = requestAnimationFrame(loop);
 
-  // UI 状态
   startBtn.style.display = 'none';
   pauseBtn.style.display = 'block';
   pauseBtn.textContent = 'Pause';
@@ -113,18 +113,16 @@ function quitToMenu() {
   if (rafId) cancelAnimationFrame(rafId);
   
   balls = [];
-  buildScene(balls); // 清空场地
+  window.projectiles = [];
+  buildScene(balls);
   pauseOverlay.classList.add('hidden');
   gameoverOverlay.classList.add('hidden');
   
-  // UI 恢复
   startBtn.style.display = 'block';
   pauseBtn.style.display = 'none';
 }
 
-// 事件绑定
 startBtn.addEventListener('click', startGame);
-
 pauseBtn.addEventListener('click', () => {
   if (gameState === 'playing') pauseGame();
 });
