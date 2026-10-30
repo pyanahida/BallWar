@@ -49,28 +49,24 @@ function resolveBallCollision(a, b) {
   const rvx = b.vx - a.vx;
   const rvy = b.vy - a.vy;
   const velAlongNormal = rvx * nx + rvy * ny;
-  if (velAlongNormal > 0) return; // separating already
+  if (velAlongNormal > 0) return;
 
-  const impulse = -velAlongNormal; // equal mass, m=1
+  const impulse = -velAlongNormal;
   a.vx -= impulse * nx;
   a.vy -= impulse * ny;
   b.vx += impulse * nx;
   b.vy += impulse * ny;
 
-  // restore base speeds direction changed but keep magnitude
-  // (spear may have different speed — normalize each to its own speed)
   normalizeVelocity(a);
   normalizeVelocity(b);
 
-  // apply damage & effects
-  // 获取实际伤害（支持动态计算，如钢卷球）
+  // apply damage (support dynamic getDamage like steel_coil)
   const dmgToB = a.def.getDamage ? a.def.getDamage(a, b) : a.damage;
   const dmgToA = b.def.getDamage ? b.def.getDamage(b, a) : b.damage;
 
   b.hp -= dmgToB;
   a.hp -= dmgToA;
 
-  // on-hit hooks
   if (a.def.onHit) a.def.onHit(a);
   if (b.def.onHit) b.def.onHit(b);
 
