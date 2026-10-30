@@ -11,7 +11,7 @@ function normalizeVelocity(ball) {
 
 function stepBall(ball, dt) {
   if (!ball.alive) return;
-  if (ball.cryingTimer > 0) return; // 处于Crying状态，停止移动
+  if (ball.cryingTimer > 0) return;
 
   ball.x += ball.vx * dt;
   ball.y += ball.vy * dt;
@@ -115,26 +115,40 @@ function stepAll(balls, dt) {
     }
   }
 
+  // 陷阱球生成陷阱
+  for (const b of balls) {
+    if (b.alive && b.type === 'trap') {
+      b.trapTimer -= dt;
+      if (b.trapTimer <= 0) {
+        b.trapTimer = 4;
+        window.traps.push({
+          x: b.x,
+          y: b.y,
+          radius: 20,
+          timer: 1.0
+        });
+      }
+    }
+  }
+
   // 子弹更新
   for (let i = window.projectiles.length - 1; i >= 0; i--) {
     const p = window.projectiles[i];
     p.x += p.vx * dt;
     p.y += p.vy * dt;
     
-    // 撞墙
     if (p.x - p.radius < 0 || p.x + p.radius > FIELD.size || p.y - p.radius < 0 || p.y + p.radius > FIELD.size) {
       window.projectiles.splice(i, 1);
       continue;
     }
     
-    // 撞球
     let hit = false;
     for (const b of balls) {
       if (!b.alive) continue;
       const dist = Math.hypot(p.x - b.x, p.y - b.y);
       if (dist < RADIUS + p.radius) {
         b.hp -= 2;
-        b.cryingTimer = 2; // 击中后Crying 2秒
+        b.cryingTimer = 2;
         if (b.hp <= 0) { b.hp = 0; b.alive = false; }
         hit = true;
         break;
@@ -143,9 +157,37 @@ function stepAll(balls, dt) {
     if (hit) window.projectiles.splice(i, 1);
   }
 
+  // 陷阱更新
+  for (let i = window.traps.length - 1; i >= 0; i--) {
+    const trap = window.traps[i];
+    trap.timer -= dt;
+    if (trap.timer <= 0) {
+      window.traps.splice(i, 1);
+      continue;
+    }
+
+    let triggered = false;
+    for (const b of balls) {
+      if (!b.alive) continue;
+      // 敌人进入陷阱范围
+      if (b.type !== 'trap' || b.id !== trap.ownerId) {
+        const dist = Math.hypot(trap.x - b.x, trap.y - b.y);
+        if (dist < trap.radius + RADIUS) {
+          b.hp -= 10;
+          if (b.hp <= 0) { b.hp = 0; b.alive = false; }
+          triggered = true;
+          break;
+        }
+      }
+    }
+    if (triggered) {
+      window.traps.splice(i, 1);
+    }
+  }
+
   for (const b of balls) stepBall(b, dt);
 
-  // 蛛丝逻辑更新
+  // 蛛丝更新
   for (const b of balls) {
     if (b.type === 'spider_web' && b.webs) {
       for (let i = b.webs.length - 1; i >= 0; i--) {
@@ -154,7 +196,6 @@ function stepAll(balls, dt) {
 
         for (const enemy of balls) {
           if (enemy === b || !enemy.alive) continue;
-
           const distSq = distToSegmentSquared(enemy.x, enemy.y, b.x, b.y, web.x, web.y);
           const hitRadius = RADIUS + 0.5; 
 
@@ -162,8 +203,7 @@ function stepAll(balls, dt) {
             if (web.cooldown <= 0) {
               enemy.hp -= 1;
               web.hp -= 1;
-              web.cooldown = 1000; // 1秒冷却
-              
+              web.cooldown = 1000;
               if (enemy.hp <= 0) { enemy.hp = 0; enemy.alive = false; }
               if (web.hp <= 0) { b.webs.splice(i, 1); break; }
             }
@@ -173,7 +213,6 @@ function stepAll(balls, dt) {
     }
   }
 
-  // 球与球物理碰撞
   for (let i = 0; i < balls.length; i++) {
     for (let j = i + 1; j < balls.length; j++) {
       resolveBallCollision(balls[i], balls[j]);
