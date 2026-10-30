@@ -1,6 +1,6 @@
 // Ball definitions & state
 const FIELD = { size: 100 };
-const V_BASE = 18; // base speed, units per second
+window.V_BASE = 18; // base speed, units per second (now mutable)
 const RADIUS = 7.5; // diameter 15
 
 const BALL_TYPES = {
@@ -13,14 +13,12 @@ const BALL_TYPES = {
     hp: 100,
     damage: 1,
     texture: 'res/spear.png',
-    // custom: bounce stacking
     onBounce(ball) {
-      ball.speed += 0.3 * V_BASE;
+      ball.speed += 0.3 * window.V_BASE;
       ball.damage += 1;
     },
     onHit(ball) {
-      // after dealing damage, reset
-      ball.speed = V_BASE;
+      ball.speed = window.V_BASE;
       ball.damage = 1;
     },
   },
@@ -33,7 +31,6 @@ const BALL_TYPES = {
     hp: 100,
     damage: 1,
     texture: 'res/steel_coil.png',
-    // 动态伤害计算：如果敌人距离边界 < 30，造成 3 伤害；否则 1 伤害
     getDamage(ball, enemy) {
       const distToLeft = enemy.x;
       const distToRight = FIELD.size - enemy.x;
@@ -55,9 +52,9 @@ function createBall(typeKey, x, y, angle) {
     type: typeKey,
     def,
     x, y,
-    vx: Math.cos(angle) * V_BASE,
-    vy: Math.sin(angle) * V_BASE,
-    speed: V_BASE,
+    vx: Math.cos(angle) * window.V_BASE,
+    vy: Math.sin(angle) * window.V_BASE,
+    speed: window.V_BASE,
     hp: def.hp,
     maxHp: def.hp,
     damage: def.damage,
