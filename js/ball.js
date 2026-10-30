@@ -58,12 +58,11 @@ const BALL_TYPES = {
     texture: 'res/spider_web.png',
     onBounce(ball, bounceX, bounceY) {
       if (!ball.webs) ball.webs = [];
-      
       ball.webs.push({
         x: bounceX,
         y: bounceY,
         hp: 3,
-        cooldown: 0 // 1秒冷却（单位：毫秒）
+        cooldown: 0
       });
     }
   },
@@ -71,6 +70,11 @@ const BALL_TYPES = {
     hp: 100,
     damage: 5,
     texture: 'res/onion.png'
+  },
+  trap: {
+    hp: 100,
+    damage: 1,
+    texture: 'res/trap.png'
   }
 };
 
@@ -94,6 +98,7 @@ function createBall(typeKey, x, y, angle) {
   };
   if (typeKey === 'spider_web') ball.webs = [];
   if (typeKey === 'onion') ball.shootTimer = 3;
+  if (typeKey === 'trap') ball.trapTimer = 4;
   return ball;
 }
 
