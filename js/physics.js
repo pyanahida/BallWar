@@ -63,8 +63,9 @@ function resolveBallCollision(a, b) {
   normalizeVelocity(b);
 
   // apply damage & effects
-  const dmgToB = a.damage;
-  const dmgToA = b.damage;
+  // 获取实际伤害（支持动态计算，如钢卷球）
+  const dmgToB = a.def.getDamage ? a.def.getDamage(a, b) : a.damage;
+  const dmgToA = b.def.getDamage ? b.def.getDamage(b, a) : b.damage;
 
   b.hp -= dmgToB;
   a.hp -= dmgToA;
