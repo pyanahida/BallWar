@@ -11,6 +11,8 @@ function normalizeVelocity(ball) {
 
 function stepBall(ball, dt) {
   if (!ball.alive) return;
+  if (ball.cryingTimer > 0) return; // 处于Crying状态，停止移动
+
   ball.x += ball.vx * dt;
   ball.y += ball.vy * dt;
 
@@ -84,6 +86,63 @@ function distToSegmentSquared(px, py, x1, y1, x2, y2) {
 }
 
 function stepAll(balls, dt) {
+  // Crying 状态计时
+  for (const b of balls) {
+    if (b.cryingTimer > 0) {
+      b.cryingTimer -= dt;
+      if (b.cryingTimer < 0) b.cryingTimer = 0;
+    }
+  }
+
+  // 洋葱球发射
+  for (const b of balls) {
+    if (b.alive && b.type === 'onion') {
+      b.shootTimer -= dt;
+      if (b.shootTimer <= 0) {
+        b.shootTimer = 3;
+        const enemies = balls.filter(e => e.alive && e !== b);
+        if (enemies.length > 0) {
+          const target = enemies[0];
+          const angle = Math.atan2(target.y - b.y, target.x - b.x);
+          window.projectiles.push({
+            x: b.x, y: b.y,
+            vx: Math.cos(angle) * 35,
+            vy: Math.sin(angle) * 35,
+            radius: 3
+          });
+        }
+      }
+    }
+  }
+
+  // 子弹更新
+  for (let i = window.projectiles.length - 1; i >= 0; i--) {
+    const p = window.projectiles[i];
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    
+    // 撞墙
+    if (p.x - p.radius < 0 || p.x + p.radius > FIELD.size || p.y - p.radius < 0 || p.y + p.radius > FIELD.size) {
+      window.projectiles.splice(i, 1);
+      continue;
+    }
+    
+    // 撞球
+    let hit = false;
+    for (const b of balls) {
+      if (!b.alive) continue;
+      const dist = Math.hypot(p.x - b.x, p.y - b.y);
+      if (dist < RADIUS + p.radius) {
+        b.hp -= 2;
+        b.cryingTimer = 2; // 击中后Crying 2秒
+        if (b.hp <= 0) { b.hp = 0; b.alive = false; }
+        hit = true;
+        break;
+      }
+    }
+    if (hit) window.projectiles.splice(i, 1);
+  }
+
   for (const b of balls) stepBall(b, dt);
 
   // 蛛丝逻辑更新
