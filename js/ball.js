@@ -41,6 +41,19 @@ const BALL_TYPES = {
       return minDistToEdge < 30 ? 3 : 1;
     }
   },
+  one_way_mirror: {
+    hp: 100,
+    damage: 5,
+    texture: 'res/one_way_mirror.png',
+    onBounce(ball) {
+      // 碰到墙壁扣 1 点血
+      ball.hp -= 1;
+      if (ball.hp <= 0) {
+        ball.hp = 0;
+        ball.alive = false;
+      }
+    }
+  }
 };
 
 let ballSeq = 0;
