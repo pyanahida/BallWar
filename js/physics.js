@@ -61,9 +61,13 @@ function resolveBallCollision(a, b) {
   normalizeVelocity(b);
 
   // apply damage (support dynamic getDamage like steel_coil)
-  const dmgToB = a.def.getDamage ? a.def.getDamage(a, b) : a.damage;
-  const dmgToA = b.def.getDamage ? b.def.getDamage(b, a) : b.damage;
-
+  let dmgToB = a.def.getDamage ? a.def.getDamage(a, b) : a.damage;
+  let dmgToA = b.def.getDamage ? b.def.getDamage(b, a) : b.damage;
+  
+  // 单向镜免伤判定：任何球碰到它，无法对它造成伤害
+  if (b.type === 'one_way_mirror') dmgToB = 0;
+  if (a.type === 'one_way_mirror') dmgToA = 0;
+  
   b.hp -= dmgToB;
   a.hp -= dmgToA;
 
