@@ -46,17 +46,13 @@ function buildScene(balls) {
   }
 }
 
-function updateScene(balls, projectiles) {
-  // 清除旧的蛛丝线和子弹
-  const oldWebs = arena.querySelectorAll('.spider-web-line');
-  oldWebs.forEach(w => w.remove());
-  
-  const oldProjectiles = arena.querySelectorAll('.projectile');
-  oldProjectiles.forEach(p => p.remove());
+function updateScene(balls, projectiles, traps) {
+  // 清理动态元素
+  arena.querySelectorAll('.dynamic-element').forEach(el => el.remove());
 
   const firstBallG = arena.querySelector('g[data-id]');
 
-  // 渲染蛛丝
+  // 渲染蛛丝 (在底层)
   for (const ball of balls) {
     if (ball.type === 'spider_web' && ball.webs && ball.alive) {
       for (const web of ball.webs) {
@@ -68,7 +64,7 @@ function updateScene(balls, projectiles) {
         line.setAttribute('stroke', '#FFF');
         line.setAttribute('stroke-width', web.cooldown > 0 ? '0.3' : '0.6');
         line.setAttribute('stroke-opacity', web.cooldown > 0 ? '0.5' : '1');
-        line.setAttribute('class', 'spider-web-line');
+        line.setAttribute('class', 'dynamic-element');
         
         if (firstBallG) arena.insertBefore(line, firstBallG);
         else arena.appendChild(line);
@@ -76,14 +72,28 @@ function updateScene(balls, projectiles) {
     }
   }
 
-  // 渲染子弹（紫色）
+  // 渲染陷阱 (在底层)
+  for (const trap of traps) {
+    const circle = document.createElementNS(SVG_NS, 'circle');
+    circle.setAttribute('cx', trap.x);
+    circle.setAttribute('cy', trap.y);
+    circle.setAttribute('r', trap.radius);
+    circle.setAttribute('fill', '#D00');
+    circle.setAttribute('opacity', (trap.timer / 1.0) * 0.6); // 随时间变淡
+    circle.setAttribute('class', 'dynamic-element');
+    
+    if (firstBallG) arena.insertBefore(circle, firstBallG);
+    else arena.appendChild(circle);
+  }
+
+  // 渲染子弹 (在中层)
   for (const p of projectiles) {
     const circle = document.createElementNS(SVG_NS, 'circle');
     circle.setAttribute('cx', p.x);
     circle.setAttribute('cy', p.y);
     circle.setAttribute('r', p.radius);
-    circle.setAttribute('fill', '#9b59b6'); // 紫色
-    circle.setAttribute('class', 'projectile');
+    circle.setAttribute('fill', '#9b59b6'); 
+    circle.setAttribute('class', 'dynamic-element');
     if (firstBallG) arena.insertBefore(circle, firstBallG);
     else arena.appendChild(circle);
   }
@@ -102,7 +112,6 @@ function updateScene(balls, projectiles) {
       img.setAttribute('x', ball.x - RADIUS);
       img.setAttribute('y', ball.y - RADIUS);
       
-      // 贴图切换逻辑
       const expectedTexture = ball.cryingTimer > 0 ? 'res/crying.png' : ball.def.texture;
       if (img.getAttribute('href') !== expectedTexture) {
         img.setAttribute('href', expectedTexture);
