@@ -22,6 +22,7 @@
         <option value="spider_web">Spider Web</option>
         <option value="onion">Onion</option>
         <option value="trap">Trap</option>
+        <option value="thorns">Thorns</option>
       </select>
       <label class="toggle">
         <input type="checkbox" id="enableA" checked>
@@ -40,6 +41,7 @@
         <option value="spider_web">Spider Web</option>
         <option value="onion">Onion</option>
         <option value="trap">Trap</option>
+        <option value="thorns">Thorns</option>
       </select>
       <label class="toggle">
         <input type="checkbox" id="enableB" checked>
@@ -62,7 +64,6 @@
   <div id="arena-wrap">
     <svg id="arena" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet"></svg>
     
-    <!-- 暂停遮罩层 -->
     <div id="pauseOverlay" class="overlay hidden">
       <div class="overlay-content">
         <h2>Paused</h2>
@@ -71,7 +72,6 @@
       </div>
     </div>
 
-    <!-- 结算遮罩层 -->
     <div id="gameoverOverlay" class="overlay hidden">
       <div class="overlay-content">
         <h2 id="winnerText">Winner</h2>
