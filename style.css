@@ -125,6 +125,11 @@ button:active {
   background: #2a5bb5;
 }
 
+/* Check Repo 按钮的悬停特效 */
+#repoBtn:hover {
+  background: #3b434b !important;
+}
+
 /* 场地容器，作为遮罩层定位参考 */
 #arena-wrap {
   width: 90vmin;
