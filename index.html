@@ -39,10 +39,16 @@
       <button id="startBtn" style="flex: 1;">Start / Reset</button>
       <button id="pauseBtn" style="flex: 1; background: #555; display: none;">Pause</button>
     </div>
+
+    <!-- 新增的 Check Repo 按钮 -->
+    <a href="https://github.com/pyanahida/FileShare/" target="_blank" style="text-decoration: none; width: 100%;">
+      <button id="repoBtn" style="background: #24292e; width: 100%; margin-top: 0;">Check Repo</button>
+    </a>
   </div>
 
   <div id="arena-wrap">
     <svg id="arena" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet"></svg>
+    
     <div id="pauseOverlay" class="overlay hidden">
       <div class="overlay-content">
         <h2>Paused</h2>
@@ -50,6 +56,7 @@
         <button id="quitBtn">Quit to Menu</button>
       </div>
     </div>
+
     <div id="gameoverOverlay" class="overlay hidden">
       <div class="overlay-content">
         <h2 id="winnerText">Winner</h2>
