@@ -13,17 +13,7 @@
   <div id="controls">
     <div class="player-setup">
       <label>Ball A</label>
-      <select id="typeA">
-        <option value="common">Common</option>
-        <option value="spear">Spear</option>
-        <option value="void">Void</option>
-        <option value="steel_coil">Steel Coil</option>
-        <option value="one_way_mirror">One-way Mirror</option>
-        <option value="spider_web">Spider Web</option>
-        <option value="onion">Onion</option>
-        <option value="trap">Trap</option>
-        <option value="thorns">Thorns</option>
-      </select>
+      <select id="typeA"></select>
       <label class="toggle">
         <input type="checkbox" id="enableA" checked>
         <span class="slider"></span>
@@ -32,17 +22,7 @@
 
     <div class="player-setup">
       <label>Ball B</label>
-      <select id="typeB">
-        <option value="common">Common</option>
-        <option value="spear" selected>Spear</option>
-        <option value="void">Void</option>
-        <option value="steel_coil">Steel Coil</option>
-        <option value="one_way_mirror">One-way Mirror</option>
-        <option value="spider_web">Spider Web</option>
-        <option value="onion">Onion</option>
-        <option value="trap">Trap</option>
-        <option value="thorns">Thorns</option>
-      </select>
+      <select id="typeB"></select>
       <label class="toggle">
         <input type="checkbox" id="enableB" checked>
         <span class="slider"></span>
@@ -63,7 +43,6 @@
 
   <div id="arena-wrap">
     <svg id="arena" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet"></svg>
-    
     <div id="pauseOverlay" class="overlay hidden">
       <div class="overlay-content">
         <h2>Paused</h2>
@@ -71,7 +50,6 @@
         <button id="quitBtn">Quit to Menu</button>
       </div>
     </div>
-
     <div id="gameoverOverlay" class="overlay hidden">
       <div class="overlay-content">
         <h2 id="winnerText">Winner</h2>
@@ -81,6 +59,7 @@
   </div>
 </div>
 
+<script src="js/effects.js"></script>
 <script src="js/ball.js"></script>
 <script src="js/physics.js"></script>
 <script src="js/ui.js"></script>
