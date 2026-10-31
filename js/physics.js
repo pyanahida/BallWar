@@ -108,21 +108,21 @@ function stepAll(balls, dt) {
             x: b.x, y: b.y,
             vx: Math.cos(angle) * 35,
             vy: Math.sin(angle) * 35,
-            radius: 3
+            radius: 3,
+            ownerId: b.id // 记录发射者
           });
         }
       }
     }
   }
 
-  // 陷阱球生成陷阱 (修复：场上随机生成)
+  // 陷阱球生成陷阱
   for (const b of balls) {
     if (b.alive && b.type === 'trap') {
       b.trapTimer -= dt;
       if (b.trapTimer <= 0) {
         b.trapTimer = 4;
         
-        // 随机生成在场地内，留出一定的边界距离避免卡在墙外
         const margin = 20;
         const randomX = margin + Math.random() * (FIELD.size - margin * 2);
         const randomY = margin + Math.random() * (FIELD.size - margin * 2);
@@ -152,6 +152,8 @@ function stepAll(balls, dt) {
     let hit = false;
     for (const b of balls) {
       if (!b.alive) continue;
+      if (p.ownerId === b.id) continue; // 忽略发射者自己
+
       const dist = Math.hypot(p.x - b.x, p.y - b.y);
       if (dist < RADIUS + p.radius) {
         b.hp -= 2;
@@ -176,7 +178,6 @@ function stepAll(balls, dt) {
     let triggered = false;
     for (const b of balls) {
       if (!b.alive) continue;
-      // 敌人进入陷阱范围
       if (b.id !== trap.ownerId) {
         const dist = Math.hypot(trap.x - b.x, trap.y - b.y);
         if (dist < trap.radius + RADIUS) {
