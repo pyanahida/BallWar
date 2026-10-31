@@ -115,15 +115,21 @@ function stepAll(balls, dt) {
     }
   }
 
-  // 陷阱球生成陷阱
+  // 陷阱球生成陷阱 (修复：场上随机生成)
   for (const b of balls) {
     if (b.alive && b.type === 'trap') {
       b.trapTimer -= dt;
       if (b.trapTimer <= 0) {
         b.trapTimer = 4;
+        
+        // 随机生成在场地内，留出一定的边界距离避免卡在墙外
+        const margin = 20;
+        const randomX = margin + Math.random() * (FIELD.size - margin * 2);
+        const randomY = margin + Math.random() * (FIELD.size - margin * 2);
+
         window.traps.push({
-          x: b.x,
-          y: b.y,
+          x: randomX,
+          y: randomY,
           radius: 20,
           timer: 1.0,
           ownerId: b.id
