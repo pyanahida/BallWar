@@ -75,6 +75,23 @@ const BALL_TYPES = {
     hp: 100,
     damage: 1,
     texture: 'res/trap.png'
+  },
+  thorns: {
+    hp: 100,
+    damage: 1,
+    texture: 'res/thorns.png',
+    onBounce(ball, bounceX, bounceY) {
+      if (!ball.thornPoints) ball.thornPoints = [];
+      ball.thornPoints.push({ x: bounceX, y: bounceY });
+      if (ball.thornPoints.length > 5) {
+        ball.thornPoints.shift();
+      }
+      // 重新生成线段冷却计时
+      if (!ball.thornCooldowns) ball.thornCooldowns = [];
+      // 新增一个点意味着可能多出一条新线段，给它加个冷却
+      ball.thornCooldowns.push(0); 
+      if (ball.thornCooldowns.length > 4) ball.thornCooldowns.shift();
+    }
   }
 };
 
@@ -99,6 +116,10 @@ function createBall(typeKey, x, y, angle) {
   if (typeKey === 'spider_web') ball.webs = [];
   if (typeKey === 'onion') ball.shootTimer = 3;
   if (typeKey === 'trap') ball.trapTimer = 4;
+  if (typeKey === 'thorns') {
+    ball.thornPoints = [];
+    ball.thornCooldowns = [];
+  }
   return ball;
 }
 
