@@ -47,12 +47,11 @@ function buildScene(balls) {
 }
 
 function updateScene(balls, projectiles, traps) {
-  // 清理动态元素
   arena.querySelectorAll('.dynamic-element').forEach(el => el.remove());
 
   const firstBallG = arena.querySelector('g[data-id]');
 
-  // 渲染蛛丝 (在底层)
+  // 渲染蛛丝
   for (const ball of balls) {
     if (ball.type === 'spider_web' && ball.webs && ball.alive) {
       for (const web of ball.webs) {
@@ -72,21 +71,44 @@ function updateScene(balls, projectiles, traps) {
     }
   }
 
-  // 渲染陷阱 (在底层)
+  // 渲染荆棘
+  for (const ball of balls) {
+    if (ball.type === 'thorns' && ball.thornPoints && ball.alive) {
+      for (let i = 0; i < ball.thornPoints.length - 1; i++) {
+        const p1 = ball.thornPoints[i];
+        const p2 = ball.thornPoints[i + 1];
+        const line = document.createElementNS(SVG_NS, 'line');
+        line.setAttribute('x1', p1.x);
+        line.setAttribute('y1', p1.y);
+        line.setAttribute('x2', p2.x);
+        line.setAttribute('y2', p2.y);
+        line.setAttribute('stroke', '#00FF00'); // 绿色
+        const isCoolingDown = ball.thornCooldowns && ball.thornCooldowns[i] > 0;
+        line.setAttribute('stroke-width', isCoolingDown ? '0.3' : '0.6');
+        line.setAttribute('stroke-opacity', isCoolingDown ? '0.5' : '1');
+        line.setAttribute('class', 'dynamic-element');
+        
+        if (firstBallG) arena.insertBefore(line, firstBallG);
+        else arena.appendChild(line);
+      }
+    }
+  }
+
+  // 渲染陷阱
   for (const trap of traps) {
     const circle = document.createElementNS(SVG_NS, 'circle');
     circle.setAttribute('cx', trap.x);
     circle.setAttribute('cy', trap.y);
     circle.setAttribute('r', trap.radius);
     circle.setAttribute('fill', '#D00');
-    circle.setAttribute('opacity', (trap.timer / 1.0) * 0.6); // 随时间变淡
+    circle.setAttribute('opacity', (trap.timer / 1.0) * 0.6);
     circle.setAttribute('class', 'dynamic-element');
     
     if (firstBallG) arena.insertBefore(circle, firstBallG);
     else arena.appendChild(circle);
   }
 
-  // 渲染子弹 (在中层)
+  // 渲染子弹
   for (const p of projectiles) {
     const circle = document.createElementNS(SVG_NS, 'circle');
     circle.setAttribute('cx', p.x);
