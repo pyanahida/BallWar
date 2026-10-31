@@ -109,7 +109,7 @@ function stepAll(balls, dt) {
             vx: Math.cos(angle) * 35,
             vy: Math.sin(angle) * 35,
             radius: 3,
-            ownerId: b.id // 记录发射者
+            ownerId: b.id
           });
         }
       }
@@ -152,7 +152,7 @@ function stepAll(balls, dt) {
     let hit = false;
     for (const b of balls) {
       if (!b.alive) continue;
-      if (p.ownerId === b.id) continue; // 忽略发射者自己
+      if (p.ownerId === b.id) continue;
 
       const dist = Math.hypot(p.x - b.x, p.y - b.y);
       if (dist < RADIUS + p.radius) {
@@ -214,6 +214,40 @@ function stepAll(balls, dt) {
               web.cooldown = 1000;
               if (enemy.hp <= 0) { enemy.hp = 0; enemy.alive = false; }
               if (web.hp <= 0) { b.webs.splice(i, 1); break; }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // 荆棘更新
+  for (const b of balls) {
+    if (b.type === 'thorns' && b.thornPoints) {
+      // 更新所有线段的冷却时间
+      for (let i = 0; i < b.thornCooldowns.length; i++) {
+        if (b.thornCooldowns[i] > 0) {
+          b.thornCooldowns[i] -= dt;
+          if (b.thornCooldowns[i] < 0) b.thornCooldowns[i] = 0;
+        }
+      }
+
+      // 检测碰撞 (n项到n+1项)
+      for (let i = 0; i < b.thornPoints.length - 1; i++) {
+        const p1 = b.thornPoints[i];
+        const p2 = b.thornPoints[i + 1];
+
+        for (const enemy of balls) {
+          if (enemy === b || !enemy.alive) continue;
+          
+          const distSq = distToSegmentSquared(enemy.x, enemy.y, p1.x, p1.y, p2.x, p2.y);
+          const hitRadius = RADIUS + 0.5;
+
+          if (distSq < hitRadius * hitRadius) {
+            if (!b.thornCooldowns[i] || b.thornCooldowns[i] <= 0) {
+              enemy.hp -= 2;
+              if (enemy.hp <= 0) { enemy.hp = 0; enemy.alive = false; }
+              b.thornCooldowns[i] = 0.4; // 0.4秒冷却
             }
           }
         }
