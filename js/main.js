@@ -30,13 +30,10 @@ async function initGame() {
     const response = await fetch('balls.json');
     const data = await response.json();
     
-    // 载入数据并绑定技能
     window.loadBallData(data);
-    
-    // 动态填充下拉框（不再默认选中任何球）
     populateDropdowns(data);
     
-    // 初始化时，清空场地，不生成任何球
+    // 初始化时，直接清空场地
     balls = [];
     buildScene(balls);
   } catch (err) {
@@ -49,7 +46,7 @@ function populateDropdowns(data) {
   typeA.innerHTML = '';
   typeB.innerHTML = '';
   
-  // 添加一个默认的空选项
+  // 1. 生成空占位符并默认选中
   const emptyOptA = new Option('--- Select ---', '');
   emptyOptA.disabled = true;
   emptyOptA.selected = true;
@@ -60,16 +57,11 @@ function populateDropdowns(data) {
   emptyOptB.selected = true;
   typeB.add(emptyOptB);
   
+  // 2. 填充所有球的数据，绝对不加任何默认选中
   for (const key in data) {
     const name = data[key].name;
-    
-    // A 球选项
-    const optA = new Option(name, key);
-    typeA.add(optA);
-    
-    // B 球选项
-    const optB = new Option(name, key);
-    typeB.add(optB);
+    typeA.add(new Option(name, key));
+    typeB.add(new Option(name, key));
   }
 }
 
@@ -80,12 +72,11 @@ function spawnBalls() {
   window.lasers = [];
   window.flashRed = false;
   
-  // 如果没选球，就不生成
   let multiplier = parseFloat(speedInput.value);
   if (isNaN(multiplier) || multiplier <= 0) multiplier = 1; 
   window.V_BASE = 18 * multiplier; 
 
-  // 确保用户选了球才生成
+  // 判断当前选中的值是不是空
   if (enableA.checked && typeA.value && typeA.value !== '') {
     balls.push(randomBall(typeA.value));
   }
@@ -132,7 +123,7 @@ function loop(t) {
 }
 
 function startGame() {
-  // 如果玩家没选球，弹个提示或者直接不开始（这里直接不开始）
+  // 如果没选球，就报错拦截
   if ((enableA.checked && !typeA.value) || (enableB.checked && !typeB.value)) {
     alert("Please select a ball type for both players before starting.");
     return;
@@ -175,13 +166,17 @@ function quitToMenu() {
   window.lasers = [];
   window.flashRed = false;
   
-  // 清空场地，不生成任何球
   buildScene(balls);
   pauseOverlay.classList.add('hidden');
+  gameoverOverlay.classList.remove('hidden');
   gameoverOverlay.classList.add('hidden');
   
   startBtn.style.display = 'block';
   pauseBtn.style.display = 'none';
+  
+  // 退出时重置为 --- Select ---
+  typeA.value = '';
+  typeB.value = '';
 }
 
 startBtn.addEventListener('click', startGame);
