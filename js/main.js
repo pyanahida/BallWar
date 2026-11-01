@@ -33,12 +33,11 @@ async function initGame() {
     window.loadBallData(data);
     populateDropdowns(data);
     
-    // 清空场地，千万不要调用 spawnBalls！
     balls = [];
     buildScene(balls);
   } catch (err) {
     console.error("Failed to load balls.json.", err);
-    alert("Failed to load game data. If running locally, please use a local server (e.g., Live Server).");
+    alert("Failed to load game data. If running locally, please use a local server.");
   }
 }
 
@@ -46,25 +45,20 @@ function populateDropdowns(data) {
   typeA.innerHTML = '';
   typeB.innerHTML = '';
   
-  // 添加空占位符并默认选中
   const emptyOptA = new Option('--- Select ---', '');
-  emptyOptA.disabled = true;
-  emptyOptA.selected = true;
+  emptyOptA.disabled = true; emptyOptA.selected = true;
   typeA.add(emptyOptA);
 
   const emptyOptB = new Option('--- Select ---', '');
-  emptyOptB.disabled = true;
-  emptyOptB.selected = true;
+  emptyOptB.disabled = true; emptyOptB.selected = true;
   typeB.add(emptyOptB);
   
-  // 填入数据
   for (const key in data) {
     const name = data[key].name;
     typeA.add(new Option(name, key));
     typeB.add(new Option(name, key));
   }
   
-  // 强制设为空（防止浏览器自动选择第一个非 disabled 项）
   typeA.value = '';
   typeB.value = '';
 }
@@ -94,15 +88,25 @@ function checkWinCondition() {
   if (balls.length <= 1) return;
   
   const aliveBalls = balls.filter(b => b.alive);
-  if (aliveBalls.length === 1) {
-    gameState = 'gameover';
-    pauseBtn.style.display = 'none';
-    winnerText.textContent = `${aliveBalls[0].def.name} Wins!`;
-    gameoverOverlay.classList.remove('hidden');
-  } else if (aliveBalls.length === 0) {
+  
+  // 判断主要球（排除卫兵等召唤物）是否存活
+  const mainBallA = aliveBalls.find(b => b.type === typeA.value);
+  const mainBallB = aliveBalls.find(b => b.type === typeB.value);
+
+  if (!mainBallA && !mainBallB) {
     gameState = 'gameover';
     pauseBtn.style.display = 'none';
     winnerText.textContent = "Draw!";
+    gameoverOverlay.classList.remove('hidden');
+  } else if (!mainBallA) {
+    gameState = 'gameover';
+    pauseBtn.style.display = 'none';
+    winnerText.textContent = `${BALL_TYPES[typeB.value].name} Wins!`;
+    gameoverOverlay.classList.remove('hidden');
+  } else if (!mainBallB) {
+    gameState = 'gameover';
+    pauseBtn.style.display = 'none';
+    winnerText.textContent = `${BALL_TYPES[typeA.value].name} Wins!`;
     gameoverOverlay.classList.remove('hidden');
   }
 }
@@ -175,7 +179,6 @@ function quitToMenu() {
   startBtn.style.display = 'block';
   pauseBtn.style.display = 'none';
   
-  // 退出时重置为空
   typeA.value = '';
   typeB.value = '';
 }
@@ -189,5 +192,4 @@ resumeBtn.addEventListener('click', resumeGame);
 quitBtn.addEventListener('click', quitToMenu);
 backToMenuBtn.addEventListener('click', quitToMenu);
 
-// 启动！
 initGame();
