@@ -13,7 +13,10 @@
   <div id="controls">
     <div class="player-setup">
       <label>Ball A</label>
-      <select id="typeA"></select>
+      <!-- 强制加入一个空的默认选中项 -->
+      <select id="typeA">
+        <option value="" disabled selected>--- Select ---</option>
+      </select>
       <label class="toggle">
         <input type="checkbox" id="enableA" checked>
         <span class="slider"></span>
@@ -22,7 +25,10 @@
 
     <div class="player-setup">
       <label>Ball B</label>
-      <select id="typeB"></select>
+      <!-- 强制加入一个空的默认选中项 -->
+      <select id="typeB">
+        <option value="" disabled selected>--- Select ---</option>
+      </select>
       <label class="toggle">
         <input type="checkbox" id="enableB" checked>
         <span class="slider"></span>
@@ -46,7 +52,6 @@
   </div>
 
   <div id="arena-wrap">
-    <!-- 闪红特效层 -->
     <div id="damageFlash" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #F00; opacity: 0; pointer-events: none; transition: opacity 0.1s ease-out; z-index: 5;"></div>
     
     <svg id="arena" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet"></svg>
@@ -68,14 +73,11 @@
   </div>
 </div>
 
-<!-- 前面的代码不变... -->
 <script src="js/effects.js"></script>
 <script src="js/ball.js"></script>
-<!-- 引入系统插件 -->
 <script src="js/systems/state.js"></script>
 <script src="js/systems/projectiles.js"></script>
 <script src="js/systems/zones.js"></script>
-<!-- 核心物理引擎 -->
 <script src="js/physics.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/main.js"></script>
