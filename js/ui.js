@@ -64,7 +64,6 @@ function updateScene(balls, projectiles, traps) {
         line.setAttribute('stroke-width', web.cooldown > 0 ? '0.3' : '0.6');
         line.setAttribute('stroke-opacity', web.cooldown > 0 ? '0.5' : '1');
         line.setAttribute('class', 'dynamic-element');
-        
         if (firstBallG) arena.insertBefore(line, firstBallG);
         else arena.appendChild(line);
       }
@@ -82,12 +81,11 @@ function updateScene(balls, projectiles, traps) {
         line.setAttribute('y1', p1.y);
         line.setAttribute('x2', p2.x);
         line.setAttribute('y2', p2.y);
-        line.setAttribute('stroke', '#00FF00'); // 绿色
+        line.setAttribute('stroke', '#00FF00');
         const isCoolingDown = ball.thornCooldowns && ball.thornCooldowns[i] > 0;
         line.setAttribute('stroke-width', isCoolingDown ? '0.3' : '0.6');
         line.setAttribute('stroke-opacity', isCoolingDown ? '0.5' : '1');
         line.setAttribute('class', 'dynamic-element');
-        
         if (firstBallG) arena.insertBefore(line, firstBallG);
         else arena.appendChild(line);
       }
@@ -103,7 +101,6 @@ function updateScene(balls, projectiles, traps) {
     circle.setAttribute('fill', '#D00');
     circle.setAttribute('opacity', (trap.timer / 1.0) * 0.6);
     circle.setAttribute('class', 'dynamic-element');
-    
     if (firstBallG) arena.insertBefore(circle, firstBallG);
     else arena.appendChild(circle);
   }
@@ -114,32 +111,38 @@ function updateScene(balls, projectiles, traps) {
     circle.setAttribute('cx', p.x);
     circle.setAttribute('cy', p.y);
     circle.setAttribute('r', p.radius);
-    circle.setAttribute('fill', '#9b59b6'); 
+    circle.setAttribute('fill', '#9b59b6');
     circle.setAttribute('class', 'dynamic-element');
     if (firstBallG) arena.insertBefore(circle, firstBallG);
     else arena.appendChild(circle);
+  }
+
+  // 渲染射线
+  for (const laser of window.lasers) {
+    const line = document.createElementNS(SVG_NS, 'line');
+    line.setAttribute('x1', laser.x1);
+    line.setAttribute('y1', laser.y1);
+    line.setAttribute('x2', laser.x2);
+    line.setAttribute('y2', laser.y2);
+    line.setAttribute('stroke', '#888888'); // 灰色
+    line.setAttribute('stroke-width', '0.4');
+    line.setAttribute('class', 'dynamic-element');
+    if (firstBallG) arena.insertBefore(line, firstBallG);
+    else arena.appendChild(line);
   }
 
   // 渲染球及状态
   for (const ball of balls) {
     const g = arena.querySelector(`g[data-id="${ball.id}"]`);
     if (!g) continue;
-    if (!ball.alive) {
-      g.style.display = 'none';
-      continue;
-    }
-    
+    if (!ball.alive) { g.style.display = 'none'; continue; }
     const img = g.querySelector('image');
     if (img) {
       img.setAttribute('x', ball.x - RADIUS);
       img.setAttribute('y', ball.y - RADIUS);
-      
       const expectedTexture = ball.cryingTimer > 0 ? 'res/crying.png' : ball.def.texture;
-      if (img.getAttribute('href') !== expectedTexture) {
-        img.setAttribute('href', expectedTexture);
-      }
+      if (img.getAttribute('href') !== expectedTexture) img.setAttribute('href', expectedTexture);
     }
-
     const text = g.querySelector('text');
     text.setAttribute('x', ball.x);
     text.setAttribute('y', ball.y);
