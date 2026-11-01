@@ -12,18 +12,18 @@ function buildScene(balls) {
   rect.setAttribute('fill', '#10141f'); rect.setAttribute('stroke', '#2a3550'); rect.setAttribute('stroke-width', '0.5');
   arena.appendChild(rect);
 
-  // 为初始球构建 DOM
   for (const ball of balls) {
     createBallDOM(ball);
   }
 }
 
 function createBallDOM(ball) {
+  if (arena.querySelector(`g[data-id="${ball.id}"]`)) return;
+
   const g = document.createElementNS(SVG_NS, 'g');
   g.setAttribute('data-id', ball.id);
 
   if (ball.type === 'guard') {
-    // 卫兵直接画红色圆圈
     const circle = document.createElementNS(SVG_NS, 'circle');
     circle.setAttribute('r', GUARD_RADIUS);
     circle.setAttribute('fill', '#ff0000');
@@ -33,7 +33,6 @@ function createBallDOM(ball) {
     circle.setAttribute('cy', ball.y);
     g.appendChild(circle);
     
-    // 护盾提示圈
     if (ball.shields > 0) {
       const shieldRing = document.createElementNS(SVG_NS, 'circle');
       shieldRing.setAttribute('r', GUARD_RADIUS + 1);
@@ -46,7 +45,6 @@ function createBallDOM(ball) {
       g.appendChild(shieldRing);
     }
   } else {
-    // 普通球用贴图
     const img = document.createElementNS(SVG_NS, 'image');
     img.setAttribute('href', ball.def.texture);
     img.setAttribute('width', RADIUS * 2);
@@ -84,18 +82,84 @@ function updateScene(balls, projectiles, traps) {
   arena.querySelectorAll('.dynamic-element').forEach(el => el.remove());
   const firstBallG = arena.querySelector('g[data-id]');
 
-  // ... 渲染蛛丝、荆棘、陷阱、子弹、射线 ...（保持不变）
+  // 渲染蛛丝
+  for (const ball of balls) {
+    if (ball.type === 'spider_web' && ball.webs && ball.alive) {
+      for (const web of ball.webs) {
+        const line = document.createElementNS(SVG_NS, 'line');
+        line.setAttribute('x1', ball.x); line.setAttribute('y1', ball.y);
+        line.setAttribute('x2', web.x); line.setAttribute('y2', web.y);
+        line.setAttribute('stroke', '#FFF');
+        line.setAttribute('stroke-width', web.cooldown > 0 ? '0.3' : '0.6');
+        line.setAttribute('stroke-opacity', web.cooldown > 0 ? '0.5' : '1');
+        line.setAttribute('class', 'dynamic-element');
+        if (firstBallG) arena.insertBefore(line, firstBallG);
+        else arena.appendChild(line);
+      }
+    }
+  }
+
+  // 渲染荆棘
+  for (const ball of balls) {
+    if (ball.type === 'thorns' && ball.thornPoints && ball.alive) {
+      for (let i = 0; i < ball.thornPoints.length - 1; i++) {
+        const p1 = ball.thornPoints[i], p2 = ball.thornPoints[i + 1];
+        const line = document.createElementNS(SVG_NS, 'line');
+        line.setAttribute('x1', p1.x); line.setAttribute('y1', p1.y);
+        line.setAttribute('x2', p2.x); line.setAttribute('y2', p2.y);
+        line.setAttribute('stroke', '#00FF00');
+        const isCoolingDown = ball.thornCooldowns && ball.thornCooldowns[i] > 0;
+        line.setAttribute('stroke-width', isCoolingDown ? '0.3' : '0.6');
+        line.setAttribute('stroke-opacity', isCoolingDown ? '0.5' : '1');
+        line.setAttribute('class', 'dynamic-element');
+        if (firstBallG) arena.insertBefore(line, firstBallG);
+        else arena.appendChild(line);
+      }
+    }
+  }
+
+  // 渲染陷阱
+  for (const trap of traps) {
+    const circle = document.createElementNS(SVG_NS, 'circle');
+    circle.setAttribute('cx', trap.x); circle.setAttribute('cy', trap.y);
+    circle.setAttribute('r', trap.radius);
+    circle.setAttribute('fill', '#D00');
+    circle.setAttribute('opacity', (trap.timer / 1.0) * 0.6);
+    circle.setAttribute('class', 'dynamic-element');
+    if (firstBallG) arena.insertBefore(circle, firstBallG);
+    else arena.appendChild(circle);
+  }
+
+  // 渲染子弹
+  for (const p of projectiles) {
+    const circle = document.createElementNS(SVG_NS, 'circle');
+    circle.setAttribute('cx', p.x); circle.setAttribute('cy', p.y);
+    circle.setAttribute('r', p.radius);
+    circle.setAttribute('fill', '#9b59b6');
+    circle.setAttribute('class', 'dynamic-element');
+    if (firstBallG) arena.insertBefore(circle, firstBallG);
+    else arena.appendChild(circle);
+  }
+
+  // 渲染射线
+  for (const laser of window.lasers) {
+    const line = document.createElementNS(SVG_NS, 'line');
+    line.setAttribute('x1', laser.x1); line.setAttribute('y1', laser.y1);
+    line.setAttribute('x2', laser.x2); line.setAttribute('y2', laser.y2);
+    line.setAttribute('stroke', '#888888');
+    line.setAttribute('stroke-width', '0.4');
+    line.setAttribute('class', 'dynamic-element');
+    if (firstBallG) arena.insertBefore(line, firstBallG);
+    else arena.appendChild(line);
+  }
 
   // 渲染球及状态
   for (const ball of balls) {
     let g = arena.querySelector(`g[data-id="${ball.id}"]`);
-    
-    // 如果是新召出来的卫兵，DOM 还没建，补建
     if (!g && ball.alive) {
       createBallDOM(ball);
       g = arena.querySelector(`g[data-id="${ball.id}"]`);
     }
-    
     if (!g) continue;
     if (!ball.alive) { g.style.display = 'none'; continue; }
     
@@ -104,7 +168,6 @@ function updateScene(balls, projectiles, traps) {
       circle.setAttribute('cx', ball.x);
       circle.setAttribute('cy', ball.y);
       
-      // 更新护盾环
       let shieldRing = g.querySelector('.shield-ring');
       if (ball.shields > 0) {
         if (!shieldRing) {
