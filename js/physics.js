@@ -38,14 +38,13 @@ function stepBall(ball, dt) {
 function resolveBallCollision(a, b) {
   if (!a.alive || !b.alive) return;
   if (a.invincible || b.invincible) return;
-  
-  // 防同阵营互撞
+
+  // 卫兵互不碰撞，防止物理死锁
+  if (a.type === 'guard' && b.type === 'guard') return;
   if ((a.type === 'guard' && b.type === 'king') || (a.type === 'king' && b.type === 'guard')) return;
-  if (a.type === 'guard' && b.type === 'guard') return; // 卫兵之间不碰撞，防止卡死
 
   const rA = a.radius || RADIUS;
   const rB = b.radius || RADIUS;
-
   const dx = b.x - a.x;
   const dy = b.y - a.y;
   const dist = Math.hypot(dx, dy);
@@ -55,32 +54,8 @@ function resolveBallCollision(a, b) {
   const nx = dx / dist;
   const ny = dy / dist;
   const overlap = minDist - dist;
-  
-  const massA = rA * rA;
-  const massB = rB * rB;
-  const totalMass = massA + massB;
-  
-  // 位置分离
-  a.x -= nx * overlap * (massB / totalMass);
-  a.y -= ny * overlap * (massB / totalMass);
-  b.x += nx * overlap * (massA / totalMass);
-  b.y += ny * overlap * (massA / totalMass);
 
-  const rvx = b.vx - a.vx;
-  const rvy = b.vy - a.vy;
-  const velAlongNormal = rvx * nx + rvy * ny;
-  if (velAlongNormal > 0) return;
-
-  // 加上一点随机扰动防止法线平行导致死锁
-  const impulse = -velAlongNormal * (1.05 + Math.random() * 0.1);
-  a.vx -= (impulse * massB / totalMass) * nx;
-  a.vy -= (impulse * massB / totalMass) * ny;
-  b.vx += (impulse * massA / totalMass) * nx;
-  b.vy += (impulse * massA / totalMass) * ny;
-
-  normalizeVelocity(a);
-  normalizeVelocity(b);
-
+  // 修复之前失去的伤害计算
   let dmgToB = a.def.getDamage ? a.def.getDamage(a, b) : a.damage;
   let dmgToA = b.def.getDamage ? b.def.getDamage(b, a) : b.damage;
 
@@ -88,16 +63,11 @@ function resolveBallCollision(a, b) {
   if (a.type === 'one_way_mirror') dmgToA = 0;
 
   if (dmgToB > 0) {
-    if (b.type === 'guard' && b.shields > 0) {
-      if (Math.random() < 0.6) { b.shields--; dmgToB = 0; }
-    }
+    if (b.type === 'guard' && b.shields > 0 && Math.random() < 0.6) { b.shields--; dmgToB = 0; }
     b.hp -= dmgToB;
   }
-
   if (dmgToA > 0) {
-    if (a.type === 'guard' && a.shields > 0) {
-      if (Math.random() < 0.6) { a.shields--; dmgToA = 0; }
-    }
+    if (a.type === 'guard' && a.shields > 0 && Math.random() < 0.6) { a.shields--; dmgToA = 0; }
     a.hp -= dmgToA;
   }
 
@@ -106,6 +76,26 @@ function resolveBallCollision(a, b) {
 
   if (a.hp <= 0) { a.hp = 0; a.alive = false; }
   if (b.hp <= 0) { b.hp = 0; b.alive = false; }
+
+  // 分离位置（放在伤害之后，防止有些球在重叠时无限刷伤害）
+  a.x -= nx * overlap * (rB / (rA + rB));
+  a.y -= ny * overlap * (rB / (rA + rB));
+  b.x += nx * overlap * (rA / (rA + rB));
+  b.y += ny * overlap * (rA / (rA + rB));
+
+  const rvx = b.vx - a.vx;
+  const rvy = b.vy - a.vy;
+  const velAlongNormal = rvx * nx + rvy * ny;
+  if (velAlongNormal > 0) return;
+
+  const impulse = -velAlongNormal * 1.5;
+  a.vx -= impulse * (rB / (rA + rB)) * nx;
+  a.vy -= impulse * (rB / (rA + rB)) * ny;
+  b.vx += impulse * (rA / (rA + rB)) * nx;
+  b.vy += impulse * (rA / (rA + rB)) * ny;
+
+  normalizeVelocity(a);
+  normalizeVelocity(b);
 }
 
 function distToSegmentSquared(px, py, x1, y1, x2, y2) {
@@ -117,7 +107,7 @@ function distToSegmentSquared(px, py, x1, y1, x2, y2) {
 }
 
 function stepAll(balls, dt) {
-  // 1. 状态机与国王召唤
+  // 状态机与国王召唤
   for (const b of balls) {
     if (!b.alive) continue;
     if (b.cryingTimer > 0) { b.cryingTimer -= dt; if (b.cryingTimer < 0) b.cryingTimer = 0; }
@@ -157,7 +147,6 @@ function stepAll(balls, dt) {
             gy = b.y + Math.sin(angle) * dist;
             valid = gx >= margin && gx <= FIELD.size - margin && gy >= margin && gy <= FIELD.size - margin;
           } while (!valid);
-
           const guard = createBall('guard', gx, gy, Math.random() * Math.PI * 2);
           guard.kingId = b.id;
           balls.push(guard);
@@ -166,15 +155,12 @@ function stepAll(balls, dt) {
     }
   }
 
-  // 国王死，卫兵全灭
   const kingAlive = balls.some(b => b.type === 'king' && b.alive);
   if (!kingAlive) {
-    for (const b of balls) {
-      if (b.type === 'guard' && b.alive) b.alive = false;
-    }
+    for (const b of balls) { if (b.type === 'guard' && b.alive) b.alive = false; }
   }
 
-  // 2. 技能发射
+  // 发射逻辑
   for (const b of balls) {
     if (!b.alive) continue;
     if (b.type === 'onion') {
@@ -221,7 +207,7 @@ function stepAll(balls, dt) {
     }
   }
 
-  // 3. 实体更新
+  // 实体更新
   for (let i = window.projectiles.length - 1; i >= 0; i--) {
     const p = window.projectiles[i];
     p.x += p.vx * dt; p.y += p.vy * dt;
@@ -314,7 +300,6 @@ function stepAll(balls, dt) {
     }
   }
 
-  // 4. 移动与碰撞
   for (const b of balls) stepBall(b, dt);
 
   for (let i = 0; i < balls.length; i++) {
