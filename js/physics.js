@@ -14,7 +14,6 @@ function stepBall(ball, dt) {
   if (ball.cryingTimer > 0) return;
   if (ball.invincible) return;
 
-  // 卫兵有独立的半径边界处理
   const r = ball.radius || RADIUS;
   const minB = r;
   const maxB = FIELD.size - r;
@@ -25,13 +24,11 @@ function stepBall(ball, dt) {
   let bounced = false;
   let bounceX = 0, bounceY = 0;
 
-  // 统一使用 r 判定边界
   if (ball.x < minB) { ball.x = minB; ball.vx = Math.abs(ball.vx); bounced = true; bounceX = 0; bounceY = ball.y; }
   if (ball.x > maxB) { ball.x = maxB; ball.vx = -Math.abs(ball.vx); bounced = true; bounceX = FIELD.size; bounceY = ball.y; }
   if (ball.y < minB) { ball.y = minB; ball.vy = Math.abs(ball.vy); bounced = true; bounceX = ball.x; bounceY = 0; }
   if (ball.y > maxB) { ball.y = maxB; ball.vy = -Math.abs(ball.vy); bounced = true; bounceX = ball.x; bounceY = FIELD.size; }
 
-  // 补充上之前漏掉的 onBounce 触发！
   if (bounced && ball.def.onBounce) {
     ball.def.onBounce(ball, bounceX, bounceY);
     normalizeVelocity(ball);
@@ -41,10 +38,10 @@ function stepBall(ball, dt) {
 function resolveBallCollision(a, b) {
   if (!a.alive || !b.alive) return;
   if (a.invincible || b.invincible) return;
-
-  // 禁止卫兵撞国王造成伤害（同阵营）
-  if (a.type === 'guard' && b.type === 'king') return;
-  if (a.type === 'king' && b.type === 'guard') return;
+  
+  // 防同阵营互撞
+  if ((a.type === 'guard' && b.type === 'king') || (a.type === 'king' && b.type === 'guard')) return;
+  if (a.type === 'guard' && b.type === 'guard') return; // 卫兵之间不碰撞，防止卡死
 
   const rA = a.radius || RADIUS;
   const rB = b.radius || RADIUS;
@@ -63,6 +60,7 @@ function resolveBallCollision(a, b) {
   const massB = rB * rB;
   const totalMass = massA + massB;
   
+  // 位置分离
   a.x -= nx * overlap * (massB / totalMass);
   a.y -= ny * overlap * (massB / totalMass);
   b.x += nx * overlap * (massA / totalMass);
@@ -73,7 +71,8 @@ function resolveBallCollision(a, b) {
   const velAlongNormal = rvx * nx + rvy * ny;
   if (velAlongNormal > 0) return;
 
-  const impulse = -velAlongNormal * (1.5);
+  // 加上一点随机扰动防止法线平行导致死锁
+  const impulse = -velAlongNormal * (1.05 + Math.random() * 0.1);
   a.vx -= (impulse * massB / totalMass) * nx;
   a.vy -= (impulse * massB / totalMass) * ny;
   b.vx += (impulse * massA / totalMass) * nx;
@@ -90,20 +89,14 @@ function resolveBallCollision(a, b) {
 
   if (dmgToB > 0) {
     if (b.type === 'guard' && b.shields > 0) {
-      if (Math.random() < 0.6) {
-        b.shields--;
-        dmgToB = 0;
-      }
+      if (Math.random() < 0.6) { b.shields--; dmgToB = 0; }
     }
     b.hp -= dmgToB;
   }
 
   if (dmgToA > 0) {
     if (a.type === 'guard' && a.shields > 0) {
-      if (Math.random() < 0.6) {
-        a.shields--;
-        dmgToA = 0;
-      }
+      if (Math.random() < 0.6) { a.shields--; dmgToA = 0; }
     }
     a.hp -= dmgToA;
   }
@@ -124,12 +117,10 @@ function distToSegmentSquared(px, py, x1, y1, x2, y2) {
 }
 
 function stepAll(balls, dt) {
+  // 1. 状态机与国王召唤
   for (const b of balls) {
     if (!b.alive) continue;
-    if (b.cryingTimer > 0) {
-      b.cryingTimer -= dt;
-      if (b.cryingTimer < 0) b.cryingTimer = 0;
-    }
+    if (b.cryingTimer > 0) { b.cryingTimer -= dt; if (b.cryingTimer < 0) b.cryingTimer = 0; }
     
     if (b.type === 'heavy_hammer') {
       b.hhTimer -= dt;
@@ -175,6 +166,7 @@ function stepAll(balls, dt) {
     }
   }
 
+  // 国王死，卫兵全灭
   const kingAlive = balls.some(b => b.type === 'king' && b.alive);
   if (!kingAlive) {
     for (const b of balls) {
@@ -182,6 +174,7 @@ function stepAll(balls, dt) {
     }
   }
 
+  // 2. 技能发射
   for (const b of balls) {
     if (!b.alive) continue;
     if (b.type === 'onion') {
@@ -228,6 +221,7 @@ function stepAll(balls, dt) {
     }
   }
 
+  // 3. 实体更新
   for (let i = window.projectiles.length - 1; i >= 0; i--) {
     const p = window.projectiles[i];
     p.x += p.vx * dt; p.y += p.vy * dt;
@@ -320,6 +314,7 @@ function stepAll(balls, dt) {
     }
   }
 
+  // 4. 移动与碰撞
   for (const b of balls) stepBall(b, dt);
 
   for (let i = 0; i < balls.length; i++) {
