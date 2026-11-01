@@ -33,7 +33,7 @@ async function initGame() {
     window.loadBallData(data);
     populateDropdowns(data);
     
-    // 初始化时，直接清空场地
+    // 清空场地，千万不要调用 spawnBalls！
     balls = [];
     buildScene(balls);
   } catch (err) {
@@ -46,7 +46,7 @@ function populateDropdowns(data) {
   typeA.innerHTML = '';
   typeB.innerHTML = '';
   
-  // 1. 生成空占位符并默认选中
+  // 添加空占位符并默认选中
   const emptyOptA = new Option('--- Select ---', '');
   emptyOptA.disabled = true;
   emptyOptA.selected = true;
@@ -57,12 +57,16 @@ function populateDropdowns(data) {
   emptyOptB.selected = true;
   typeB.add(emptyOptB);
   
-  // 2. 填充所有球的数据，绝对不加任何默认选中
+  // 填入数据
   for (const key in data) {
     const name = data[key].name;
     typeA.add(new Option(name, key));
     typeB.add(new Option(name, key));
   }
+  
+  // 强制设为空（防止浏览器自动选择第一个非 disabled 项）
+  typeA.value = '';
+  typeB.value = '';
 }
 
 function spawnBalls() {
@@ -76,7 +80,6 @@ function spawnBalls() {
   if (isNaN(multiplier) || multiplier <= 0) multiplier = 1; 
   window.V_BASE = 18 * multiplier; 
 
-  // 判断当前选中的值是不是空
   if (enableA.checked && typeA.value && typeA.value !== '') {
     balls.push(randomBall(typeA.value));
   }
@@ -123,7 +126,6 @@ function loop(t) {
 }
 
 function startGame() {
-  // 如果没选球，就报错拦截
   if ((enableA.checked && !typeA.value) || (enableB.checked && !typeB.value)) {
     alert("Please select a ball type for both players before starting.");
     return;
@@ -168,13 +170,12 @@ function quitToMenu() {
   
   buildScene(balls);
   pauseOverlay.classList.add('hidden');
-  gameoverOverlay.classList.remove('hidden');
   gameoverOverlay.classList.add('hidden');
   
   startBtn.style.display = 'block';
   pauseBtn.style.display = 'none';
   
-  // 退出时重置为 --- Select ---
+  // 退出时重置为空
   typeA.value = '';
   typeB.value = '';
 }
