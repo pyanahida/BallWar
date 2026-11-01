@@ -111,23 +111,24 @@ function stepAll(balls, dt) {
         b.hhTimer = 4.0;
         b.invincible = false;
         
-        // 恢复移动方向（保留原有的朝向，但我们之前vx/vy清零了，所以需要重新赋予。为了保证随机性，这里给个默认速度或者继承之前的speed）
-        // 其实更好的做法是在进入 idle 时记录方向，但这里简单处理：随机给个方向或者让它按原来的角度继续
-        // 为了符合逻辑，我们给个随机的方向，或者用之前的记录（这里简化为重新随机）
         const angle = Math.random() * Math.PI * 2;
         b.vx = Math.cos(angle) * b.speed;
         b.vy = Math.sin(angle) * b.speed;
 
-        // 触发闪红特效 (交给 ui.js 处理)
-        window.flashRed = true;
-
         // 伤害判定
+        let hitSomething = false;
         for (const enemy of balls) {
           if (enemy === b || !enemy.alive) continue;
           if (enemy.x >= b.x - 7.5 && enemy.x <= b.x + 7.5 && enemy.y >= b.y + 7.5) {
             enemy.hp -= 20;
             if (enemy.hp <= 0) { enemy.hp = 0; enemy.alive = false; }
+            hitSomething = true;
           }
+        }
+
+        // 只有命中时才触发闪红特效
+        if (hitSomething) {
+          window.flashRed = true;
         }
       }
     }
