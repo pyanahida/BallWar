@@ -25,11 +25,13 @@ function stepBall(ball, dt) {
   let bounced = false;
   let bounceX = 0, bounceY = 0;
 
+  // 统一使用 r 判定边界
   if (ball.x < minB) { ball.x = minB; ball.vx = Math.abs(ball.vx); bounced = true; bounceX = 0; bounceY = ball.y; }
   if (ball.x > maxB) { ball.x = maxB; ball.vx = -Math.abs(ball.vx); bounced = true; bounceX = FIELD.size; bounceY = ball.y; }
   if (ball.y < minB) { ball.y = minB; ball.vy = Math.abs(ball.vy); bounced = true; bounceX = ball.x; bounceY = 0; }
   if (ball.y > maxB) { ball.y = maxB; ball.vy = -Math.abs(ball.vy); bounced = true; bounceX = ball.x; bounceY = FIELD.size; }
 
+  // 补充上之前漏掉的 onBounce 触发！
   if (bounced && ball.def.onBounce) {
     ball.def.onBounce(ball, bounceX, bounceY);
     normalizeVelocity(ball);
@@ -39,6 +41,10 @@ function stepBall(ball, dt) {
 function resolveBallCollision(a, b) {
   if (!a.alive || !b.alive) return;
   if (a.invincible || b.invincible) return;
+
+  // 禁止卫兵撞国王造成伤害（同阵营）
+  if (a.type === 'guard' && b.type === 'king') return;
+  if (a.type === 'king' && b.type === 'guard') return;
 
   const rA = a.radius || RADIUS;
   const rB = b.radius || RADIUS;
@@ -53,7 +59,6 @@ function resolveBallCollision(a, b) {
   const ny = dy / dist;
   const overlap = minDist - dist;
   
-  // 质量比（国王比卫兵重，所以推开卫兵更多）
   const massA = rA * rA;
   const massB = rB * rB;
   const totalMass = massA + massB;
@@ -68,7 +73,7 @@ function resolveBallCollision(a, b) {
   const velAlongNormal = rvx * nx + rvy * ny;
   if (velAlongNormal > 0) return;
 
-  const impulse = -velAlongNormal * (1.5); // 稍微加点弹性
+  const impulse = -velAlongNormal * (1.5);
   a.vx -= (impulse * massB / totalMass) * nx;
   a.vy -= (impulse * massB / totalMass) * ny;
   b.vx += (impulse * massA / totalMass) * nx;
@@ -77,26 +82,22 @@ function resolveBallCollision(a, b) {
   normalizeVelocity(a);
   normalizeVelocity(b);
 
-  // 护盾机制判定
   let dmgToB = a.def.getDamage ? a.def.getDamage(a, b) : a.damage;
   let dmgToA = b.def.getDamage ? b.def.getDamage(b, a) : b.damage;
 
   if (b.type === 'one_way_mirror') dmgToB = 0;
   if (a.type === 'one_way_mirror') dmgToA = 0;
 
-  // 结算 B 受伤
   if (dmgToB > 0) {
     if (b.type === 'guard' && b.shields > 0) {
-      // 60% 概率抵挡
       if (Math.random() < 0.6) {
-        b.shields--; // 消耗护盾
-        dmgToB = 0;  // 抵挡伤害
+        b.shields--;
+        dmgToB = 0;
       }
     }
     b.hp -= dmgToB;
   }
 
-  // 结算 A 受伤
   if (dmgToA > 0) {
     if (a.type === 'guard' && a.shields > 0) {
       if (Math.random() < 0.6) {
@@ -123,7 +124,6 @@ function distToSegmentSquared(px, py, x1, y1, x2, y2) {
 }
 
 function stepAll(balls, dt) {
-  // 1. 状态更新与国王召唤
   for (const b of balls) {
     if (!b.alive) continue;
     if (b.cryingTimer > 0) {
@@ -132,7 +132,6 @@ function stepAll(balls, dt) {
     }
     
     if (b.type === 'heavy_hammer') {
-      // ... 重锤原有逻辑 ...
       b.hhTimer -= dt;
       if (b.hhPhase === 'move' && b.hhTimer <= 0) {
         b.hhPhase = 'idle'; b.hhTimer = 1.0; b.invincible = true; b.vx = 0; b.vy = 0;
@@ -153,16 +152,13 @@ function stepAll(balls, dt) {
       }
     }
 
-    // 国王召唤卫兵
     if (b.type === 'king') {
       b.summonTimer -= dt;
       if (b.summonTimer <= 0) {
         b.summonTimer = 5;
-        // 在国王周围生成 5 个卫兵
         for (let i = 0; i < 5; i++) {
           const margin = GUARD_RADIUS + 1;
           let gx, gy, valid;
-          // 尝试找个不跟国王重叠的位置
           do {
             const angle = Math.random() * Math.PI * 2;
             const dist = Math.random() * 15 + 10;
@@ -171,16 +167,14 @@ function stepAll(balls, dt) {
             valid = gx >= margin && gx <= FIELD.size - margin && gy >= margin && gy <= FIELD.size - margin;
           } while (!valid);
 
-          // 创建卫兵
           const guard = createBall('guard', gx, gy, Math.random() * Math.PI * 2);
           guard.kingId = b.id;
-          balls.push(guard); // 动态加入 balls 数组
+          balls.push(guard);
         }
       }
     }
   }
 
-  // 判定国王死亡（清理卫兵）
   const kingAlive = balls.some(b => b.type === 'king' && b.alive);
   if (!kingAlive) {
     for (const b of balls) {
@@ -188,10 +182,8 @@ function stepAll(balls, dt) {
     }
   }
 
-  // 2. 发射逻辑（洋葱、公文包）
   for (const b of balls) {
     if (!b.alive) continue;
-    // ... 洋葱子弹逻辑 ...
     if (b.type === 'onion') {
       b.shootTimer -= dt;
       if (b.shootTimer <= 0) {
@@ -204,7 +196,6 @@ function stepAll(balls, dt) {
         }
       }
     }
-    // ... 公文包射线逻辑 ...
     if (b.type === 'briefcase') {
       b.laserTimer -= dt;
       if (b.laserTimer <= 0) {
@@ -227,7 +218,6 @@ function stepAll(balls, dt) {
         }
       }
     }
-    // ... 陷阱生成逻辑 ...
     if (b.type === 'trap') {
       b.trapTimer -= dt;
       if (b.trapTimer <= 0) {
@@ -238,8 +228,6 @@ function stepAll(balls, dt) {
     }
   }
 
-  // 3. 子弹、射线、陷阱、蛛丝、荆棘更新（省略重复代码，保持与上一版一致）
-  // ... 子弹更新 ...
   for (let i = window.projectiles.length - 1; i >= 0; i--) {
     const p = window.projectiles[i];
     p.x += p.vx * dt; p.y += p.vy * dt;
@@ -257,7 +245,6 @@ function stepAll(balls, dt) {
     if (hit) window.projectiles.splice(i, 1);
   }
 
-  // ... 射线更新 ...
   for (let i = window.lasers.length - 1; i >= 0; i--) {
     const laser = window.lasers[i];
     laser.timer -= dt;
@@ -278,7 +265,6 @@ function stepAll(balls, dt) {
     }
   }
 
-  // ... 陷阱更新 ...
   for (let i = window.traps.length - 1; i >= 0; i--) {
     const trap = window.traps[i];
     trap.timer -= dt;
@@ -296,7 +282,6 @@ function stepAll(balls, dt) {
     if (triggered) window.traps.splice(i, 1);
   }
 
-  // ... 蛛丝与荆棘更新 ...
   for (const b of balls) {
     if (b.type === 'spider_web' && b.webs) {
       for (let i = b.webs.length - 1; i >= 0; i--) {
@@ -335,7 +320,6 @@ function stepAll(balls, dt) {
     }
   }
 
-  // 4. 物理移动与碰撞
   for (const b of balls) stepBall(b, dt);
 
   for (let i = 0; i < balls.length; i++) {
