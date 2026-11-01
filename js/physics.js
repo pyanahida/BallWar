@@ -116,24 +116,64 @@ function stepAll(balls, dt) {
     }
   }
 
-  // 陷阱球生成陷阱
+  // 公文包发射射线
+  for (const b of balls) {
+    if (b.alive && b.type === 'briefcase') {
+      b.laserTimer -= dt;
+      if (b.laserTimer <= 0) {
+        b.laserTimer = 5;
+        
+        // 生成 X 型射线
+        // 方向: (1,1), (1,-1), (-1,1), (-1,-1)
+        const dirs = [
+          { dx: 1, dy: 1 }, { dx: 1, dy: -1 },
+          { dx: -1, dy: 1 }, { dx: -1, dy: -1 }
+        ];
+        
+        for (const dir of dirs) {
+          // 计算射线与墙壁的交点 (最远100)
+          let endX = b.x, endY = b.y;
+          if (dir.dx > 0) endX = FIELD.size;
+          if (dir.dx < 0) endX = 0;
+          if (dir.dy > 0) endY = FIELD.size;
+          if (dir.dy < 0) endY = 0;
+          
+          // 确保射线延伸到边界
+          const distX = Math.abs(endX - b.x);
+          const distY = Math.abs(endY - b.y);
+          const maxDist = Math.max(distX, distY);
+          endX = b.x + dir.dx * maxDist;
+          endY = b.y + dir.dy * maxDist;
+
+          window.lasers.push({
+            x1: b.x, y1: b.y, x2: endX, y2: endY,
+            timer: 2.0, ownerId: b.id, type: 'X'
+          });
+
+          // 瞬间命中判定
+          for (const enemy of balls) {
+            if (!enemy.alive) continue;
+            const distSq = distToSegmentSquared(enemy.x, enemy.y, b.x, b.y, endX, endY);
+            if (distSq < RADIUS * RADIUS) {
+              enemy.hp -= 6;
+              if (enemy.hp <= 0) { enemy.hp = 0; enemy.alive = false; }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // 陷阱球生成
   for (const b of balls) {
     if (b.alive && b.type === 'trap') {
       b.trapTimer -= dt;
       if (b.trapTimer <= 0) {
         b.trapTimer = 4;
-        
         const margin = 20;
         const randomX = margin + Math.random() * (FIELD.size - margin * 2);
         const randomY = margin + Math.random() * (FIELD.size - margin * 2);
-
-        window.traps.push({
-          x: randomX,
-          y: randomY,
-          radius: 20,
-          timer: 1.0,
-          ownerId: b.id
-        });
+        window.traps.push({ x: randomX, y: randomY, radius: 20, timer: 1.0, ownerId: b.id });
       }
     }
   }
@@ -153,7 +193,6 @@ function stepAll(balls, dt) {
     for (const b of balls) {
       if (!b.alive) continue;
       if (p.ownerId === b.id) continue;
-
       const dist = Math.hypot(p.x - b.x, p.y - b.y);
       if (dist < RADIUS + p.radius) {
         b.hp -= 2;
@@ -166,14 +205,50 @@ function stepAll(balls, dt) {
     if (hit) window.projectiles.splice(i, 1);
   }
 
+  // 射线更新
+  for (let i = window.lasers.length - 1; i >= 0; i--) {
+    const laser = window.lasers[i];
+    laser.timer -= dt;
+    if (laser.timer <= 0) {
+      window.lasers.splice(i, 1);
+      continue;
+    }
+
+    // 碰撞与镜面反弹判定
+    for (const b of balls) {
+      if (!b.alive || b.id === laser.ownerId) continue;
+      // 避免和生成射线时的瞬间判定重复，这里加个极短的冷却或者只让移动中的球触发
+      const distSq = distToSegmentSquared(b.x, b.y, laser.x1, laser.y1, laser.x2, laser.y2);
+      if (distSq < RADIUS * RADIUS) {
+        // 造成伤害
+        b.hp -= 3;
+        if (b.hp <= 0) { b.hp = 0; b.alive = false; }
+
+        // 镜面反弹计算
+        const dx = laser.x2 - laser.x1;
+        const dy = laser.y2 - laser.y1;
+        const len = Math.hypot(dx, dy);
+        const nx = -dy / len; // 射线的法线
+        const ny = dx / len;
+        const dot = b.vx * nx + b.vy * ny;
+        
+        b.vx = b.vx - 2 * dot * nx;
+        b.vy = b.vy - 2 * dot * ny;
+
+        // 把球推离射线，防止下一帧连续触发
+        const pushDist = RADIUS + 0.5;
+        const sign = Math.sign(dot) || 1;
+        b.x += nx * pushDist * sign;
+        b.y += ny * pushDist * sign;
+      }
+    }
+  }
+
   // 陷阱更新
   for (let i = window.traps.length - 1; i >= 0; i--) {
     const trap = window.traps[i];
     trap.timer -= dt;
-    if (trap.timer <= 0) {
-      window.traps.splice(i, 1);
-      continue;
-    }
+    if (trap.timer <= 0) { window.traps.splice(i, 1); continue; }
 
     let triggered = false;
     for (const b of balls) {
@@ -188,26 +263,21 @@ function stepAll(balls, dt) {
         }
       }
     }
-    if (triggered) {
-      window.traps.splice(i, 1);
-    }
+    if (triggered) window.traps.splice(i, 1);
   }
 
   for (const b of balls) stepBall(b, dt);
 
-  // 蛛丝更新
+  // 蛛丝/荆棘更新 (保持原样)
   for (const b of balls) {
     if (b.type === 'spider_web' && b.webs) {
       for (let i = b.webs.length - 1; i >= 0; i--) {
         const web = b.webs[i];
         if (web.cooldown > 0) web.cooldown -= dt * 1000;
-
         for (const enemy of balls) {
           if (enemy === b || !enemy.alive) continue;
           const distSq = distToSegmentSquared(enemy.x, enemy.y, b.x, b.y, web.x, web.y);
-          const hitRadius = RADIUS + 0.5; 
-
-          if (distSq < hitRadius * hitRadius) {
+          if (distSq < (RADIUS + 0.5) ** 2) {
             if (web.cooldown <= 0) {
               enemy.hp -= 1;
               web.hp -= 1;
@@ -221,33 +291,25 @@ function stepAll(balls, dt) {
     }
   }
 
-  // 荆棘更新
   for (const b of balls) {
     if (b.type === 'thorns' && b.thornPoints) {
-      // 更新所有线段的冷却时间
       for (let i = 0; i < b.thornCooldowns.length; i++) {
         if (b.thornCooldowns[i] > 0) {
           b.thornCooldowns[i] -= dt;
           if (b.thornCooldowns[i] < 0) b.thornCooldowns[i] = 0;
         }
       }
-
-      // 检测碰撞 (n项到n+1项)
       for (let i = 0; i < b.thornPoints.length - 1; i++) {
         const p1 = b.thornPoints[i];
         const p2 = b.thornPoints[i + 1];
-
         for (const enemy of balls) {
           if (enemy === b || !enemy.alive) continue;
-          
           const distSq = distToSegmentSquared(enemy.x, enemy.y, p1.x, p1.y, p2.x, p2.y);
-          const hitRadius = RADIUS + 0.5;
-
-          if (distSq < hitRadius * hitRadius) {
+          if (distSq < (RADIUS + 0.5) ** 2) {
             if (!b.thornCooldowns[i] || b.thornCooldowns[i] <= 0) {
               enemy.hp -= 2;
               if (enemy.hp <= 0) { enemy.hp = 0; enemy.alive = false; }
-              b.thornCooldowns[i] = 0.4; // 0.4秒冷却
+              b.thornCooldowns[i] = 0.4;
             }
           }
         }
