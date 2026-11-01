@@ -18,10 +18,7 @@ window.EFFECTS = {
   },
   one_way_mirror_onBounce: function(ball) {
     ball.hp -= 1;
-    if (ball.hp <= 0) {
-      ball.hp = 0;
-      ball.alive = false;
-    }
+    if (ball.hp <= 0) { ball.hp = 0; ball.alive = false; }
   },
   spider_web_onBounce: function(ball, bounceX, bounceY) {
     if (!ball.webs) ball.webs = [];
