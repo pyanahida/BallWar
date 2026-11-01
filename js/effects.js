@@ -31,5 +31,20 @@ window.EFFECTS = {
     if (!ball.thornCooldowns) ball.thornCooldowns = [];
     ball.thornCooldowns.push(0); 
     if (ball.thornCooldowns.length > 4) ball.thornCooldowns.shift();
+  },
+  
+  // 吸血鬼：50%概率吸血，50%概率普通伤害
+  vampire_onHit: function(ball, enemy) {
+    if (Math.random() < 0.5) {
+      // 抵消原有的1点伤害，重新结算
+      enemy.hp -= 2; // 原本的1点已经在 physics 里扣了，这里再扣2点，总共3点
+      ball.hp = Math.min(ball.maxHp, ball.hp + 3);
+      if (enemy.hp <= 0) { enemy.hp = 0; enemy.alive = false; }
+    }
+  },
+
+  // 重锤：通过状态机在 physics 的 stepAll 里统一处理
+  heavy_hammer_onBounce: function(ball) {
+    // 正常碰撞反弹，不需要特殊处理
   }
 };
