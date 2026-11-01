@@ -2,9 +2,10 @@
 let balls = [];
 window.projectiles = [];
 window.traps = [];
+window.lasers = [];
 let lastTime = 0;
 let rafId = null;
-let gameState = 'idle'; 
+let gameState = 'idle'; // 'idle', 'playing', 'paused', 'gameover'
 
 const typeA = document.getElementById('typeA');
 const typeB = document.getElementById('typeB');
@@ -22,23 +23,16 @@ const gameoverOverlay = document.getElementById('gameoverOverlay');
 const winnerText = document.getElementById('winnerText');
 const backToMenuBtn = document.getElementById('backToMenuBtn');
 
-// 初始化游戏
 async function initGame() {
   try {
     const response = await fetch('balls.json');
     const data = await response.json();
-    
-    // 载入数据并绑定技能
     window.loadBallData(data);
-    
-    // 动态填充下拉框
     populateDropdowns(data);
-    
-    // 初始化第一把场景
     spawnBalls();
   } catch (err) {
-    console.error("Failed to load balls.json. Ensure you are running on a server.", err);
-    alert("Failed to load game data. If running locally, please use a local server (e.g., Live Server).");
+    console.error("Failed to load balls.json.", err);
+    alert("Failed to load game data. Please use a local server.");
   }
 }
 
@@ -47,12 +41,10 @@ function populateDropdowns(data) {
   typeB.innerHTML = '';
   for (const key in data) {
     const name = data[key].name;
-    
     const optA = new Option(name, key);
     typeA.add(optA);
-    
     const optB = new Option(name, key);
-    if (key === 'spear') optB.selected = true; // 默认选择
+    if (key === 'spear') optB.selected = true;
     typeB.add(optB);
   }
 }
@@ -61,6 +53,7 @@ function spawnBalls() {
   balls = [];
   window.projectiles = [];
   window.traps = [];
+  window.lasers = [];
   
   let multiplier = parseFloat(speedInput.value);
   if (isNaN(multiplier) || multiplier <= 0) multiplier = 1; 
@@ -74,7 +67,6 @@ function spawnBalls() {
 
 function checkWinCondition() {
   if (balls.length <= 1) return;
-  
   const aliveBalls = balls.filter(b => b.alive);
   if (aliveBalls.length === 1) {
     gameState = 'gameover';
@@ -94,7 +86,6 @@ function loop(t) {
     if (lastTime === 0) lastTime = t;
     let dt = (t - lastTime) / 1000;
     lastTime = t;
-    
     if (dt > 0.05) dt = 0.05;
 
     stepAll(balls, dt);
@@ -103,7 +94,6 @@ function loop(t) {
   } else {
     lastTime = t;
   }
-
   rafId = requestAnimationFrame(loop);
 }
 
@@ -111,12 +101,10 @@ function startGame() {
   if (rafId) cancelAnimationFrame(rafId);
   gameoverOverlay.classList.add('hidden');
   pauseOverlay.classList.add('hidden');
-  
   spawnBalls();
   gameState = 'playing';
   lastTime = 0;
   rafId = requestAnimationFrame(loop);
-
   startBtn.style.display = 'none';
   pauseBtn.style.display = 'block';
   pauseBtn.textContent = 'Pause';
@@ -138,26 +126,21 @@ function resumeGame() {
 function quitToMenu() {
   gameState = 'idle';
   if (rafId) cancelAnimationFrame(rafId);
-  
   balls = [];
   window.projectiles = [];
   window.traps = [];
+  window.lasers = [];
   buildScene(balls);
   pauseOverlay.classList.add('hidden');
   gameoverOverlay.classList.add('hidden');
-  
   startBtn.style.display = 'block';
   pauseBtn.style.display = 'none';
 }
 
 startBtn.addEventListener('click', startGame);
-pauseBtn.addEventListener('click', () => {
-  if (gameState === 'playing') pauseGame();
-});
-
+pauseBtn.addEventListener('click', () => { if (gameState === 'playing') pauseGame(); });
 resumeBtn.addEventListener('click', resumeGame);
 quitBtn.addEventListener('click', quitToMenu);
 backToMenuBtn.addEventListener('click', quitToMenu);
 
-// 启动！
 initGame();
