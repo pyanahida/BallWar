@@ -12,6 +12,7 @@ function normalizeVelocity(ball) {
 function stepBall(ball, dt) {
   if (!ball.alive) return;
   if (ball.cryingTimer > 0) return;
+  if (ball.invincible) return; // 重锤无敌时不动
 
   ball.x += ball.vx * dt;
   ball.y += ball.vy * dt;
@@ -32,6 +33,7 @@ function stepBall(ball, dt) {
 
 function resolveBallCollision(a, b) {
   if (!a.alive || !b.alive) return;
+  if (a.invincible || b.invincible) return; // 重锤无敌时免疫碰撞
 
   const dx = b.x - a.x;
   const dy = b.y - a.y;
@@ -70,8 +72,8 @@ function resolveBallCollision(a, b) {
   b.hp -= dmgToB;
   a.hp -= dmgToA;
 
-  if (a.def.onHit) a.def.onHit(a);
-  if (b.def.onHit) b.def.onHit(b);
+  if (a.def.onHit) a.def.onHit(a, b);
+  if (b.def.onHit) b.def.onHit(b, a);
 
   if (a.hp <= 0) { a.hp = 0; a.alive = false; }
   if (b.hp <= 0) { b.hp = 0; b.alive = false; }
@@ -86,11 +88,48 @@ function distToSegmentSquared(px, py, x1, y1, x2, y2) {
 }
 
 function stepAll(balls, dt) {
-  // Crying 状态计时
+  // 各种状态计时器更新
   for (const b of balls) {
     if (b.cryingTimer > 0) {
       b.cryingTimer -= dt;
       if (b.cryingTimer < 0) b.cryingTimer = 0;
+    }
+    
+    // 重锤状态机
+    if (b.alive && b.type === 'heavy_hammer') {
+      b.hhTimer -= dt;
+      
+      if (b.hhPhase === 'move' && b.hhTimer <= 0) {
+        b.hhPhase = 'idle';
+        b.hhTimer = 1.0;
+        b.invincible = true;
+        b.vx = 0;
+        b.vy = 0;
+      } else if (b.hhPhase === 'idle' && b.hhTimer <= 0) {
+        // 1秒无敌结束，执行审判
+        b.hhPhase = 'move';
+        b.hhTimer = 4.0;
+        b.invincible = false;
+        
+        // 恢复移动方向（保留原有的朝向，但我们之前vx/vy清零了，所以需要重新赋予。为了保证随机性，这里给个默认速度或者继承之前的speed）
+        // 其实更好的做法是在进入 idle 时记录方向，但这里简单处理：随机给个方向或者让它按原来的角度继续
+        // 为了符合逻辑，我们给个随机的方向，或者用之前的记录（这里简化为重新随机）
+        const angle = Math.random() * Math.PI * 2;
+        b.vx = Math.cos(angle) * b.speed;
+        b.vy = Math.sin(angle) * b.speed;
+
+        // 触发闪红特效 (交给 ui.js 处理)
+        window.flashRed = true;
+
+        // 伤害判定
+        for (const enemy of balls) {
+          if (enemy === b || !enemy.alive) continue;
+          if (enemy.x >= b.x - 7.5 && enemy.x <= b.x + 7.5 && enemy.y >= b.y + 7.5) {
+            enemy.hp -= 20;
+            if (enemy.hp <= 0) { enemy.hp = 0; enemy.alive = false; }
+          }
+        }
+      }
     }
   }
 
@@ -122,23 +161,16 @@ function stepAll(balls, dt) {
       b.laserTimer -= dt;
       if (b.laserTimer <= 0) {
         b.laserTimer = 5;
-        
-        // 生成 X 型射线
-        // 方向: (1,1), (1,-1), (-1,1), (-1,-1)
         const dirs = [
           { dx: 1, dy: 1 }, { dx: 1, dy: -1 },
           { dx: -1, dy: 1 }, { dx: -1, dy: -1 }
         ];
-        
         for (const dir of dirs) {
-          // 计算射线与墙壁的交点 (最远100)
           let endX = b.x, endY = b.y;
           if (dir.dx > 0) endX = FIELD.size;
           if (dir.dx < 0) endX = 0;
           if (dir.dy > 0) endY = FIELD.size;
           if (dir.dy < 0) endY = 0;
-          
-          // 确保射线延伸到边界
           const distX = Math.abs(endX - b.x);
           const distY = Math.abs(endY - b.y);
           const maxDist = Math.max(distX, distY);
@@ -150,7 +182,6 @@ function stepAll(balls, dt) {
             timer: 2.0, ownerId: b.id, type: 'X'
           });
 
-          // 瞬间命中判定
           for (const enemy of balls) {
             if (!enemy.alive) continue;
             const distSq = distToSegmentSquared(enemy.x, enemy.y, b.x, b.y, endX, endY);
@@ -191,7 +222,7 @@ function stepAll(balls, dt) {
     
     let hit = false;
     for (const b of balls) {
-      if (!b.alive) continue;
+      if (!b.alive || b.invincible) continue; // 无敌免疫子弹
       if (p.ownerId === b.id) continue;
       const dist = Math.hypot(p.x - b.x, p.y - b.y);
       if (dist < RADIUS + p.radius) {
@@ -209,33 +240,26 @@ function stepAll(balls, dt) {
   for (let i = window.lasers.length - 1; i >= 0; i--) {
     const laser = window.lasers[i];
     laser.timer -= dt;
-    if (laser.timer <= 0) {
-      window.lasers.splice(i, 1);
-      continue;
-    }
+    if (laser.timer <= 0) { window.lasers.splice(i, 1); continue; }
 
-    // 碰撞与镜面反弹判定
     for (const b of balls) {
-      if (!b.alive || b.id === laser.ownerId) continue;
-      // 避免和生成射线时的瞬间判定重复，这里加个极短的冷却或者只让移动中的球触发
+      if (!b.alive || b.invincible) continue; // 无敌免疫激光
+      if (b.id === laser.ownerId) continue;
       const distSq = distToSegmentSquared(b.x, b.y, laser.x1, laser.y1, laser.x2, laser.y2);
       if (distSq < RADIUS * RADIUS) {
-        // 造成伤害
         b.hp -= 3;
         if (b.hp <= 0) { b.hp = 0; b.alive = false; }
-
-        // 镜面反弹计算
+        
         const dx = laser.x2 - laser.x1;
         const dy = laser.y2 - laser.y1;
         const len = Math.hypot(dx, dy);
-        const nx = -dy / len; // 射线的法线
+        const nx = -dy / len;
         const ny = dx / len;
         const dot = b.vx * nx + b.vy * ny;
         
         b.vx = b.vx - 2 * dot * nx;
         b.vy = b.vy - 2 * dot * ny;
 
-        // 把球推离射线，防止下一帧连续触发
         const pushDist = RADIUS + 0.5;
         const sign = Math.sign(dot) || 1;
         b.x += nx * pushDist * sign;
@@ -252,7 +276,7 @@ function stepAll(balls, dt) {
 
     let triggered = false;
     for (const b of balls) {
-      if (!b.alive) continue;
+      if (!b.alive || b.invincible) continue; // 无敌免疫陷阱
       if (b.id !== trap.ownerId) {
         const dist = Math.hypot(trap.x - b.x, trap.y - b.y);
         if (dist < trap.radius + RADIUS) {
@@ -268,14 +292,14 @@ function stepAll(balls, dt) {
 
   for (const b of balls) stepBall(b, dt);
 
-  // 蛛丝/荆棘更新 (保持原样)
+  // 蛛丝/荆棘更新
   for (const b of balls) {
     if (b.type === 'spider_web' && b.webs) {
       for (let i = b.webs.length - 1; i >= 0; i--) {
         const web = b.webs[i];
         if (web.cooldown > 0) web.cooldown -= dt * 1000;
         for (const enemy of balls) {
-          if (enemy === b || !enemy.alive) continue;
+          if (enemy === b || !enemy.alive || enemy.invincible) continue;
           const distSq = distToSegmentSquared(enemy.x, enemy.y, b.x, b.y, web.x, web.y);
           if (distSq < (RADIUS + 0.5) ** 2) {
             if (web.cooldown <= 0) {
@@ -303,7 +327,7 @@ function stepAll(balls, dt) {
         const p1 = b.thornPoints[i];
         const p2 = b.thornPoints[i + 1];
         for (const enemy of balls) {
-          if (enemy === b || !enemy.alive) continue;
+          if (enemy === b || !enemy.alive || enemy.invincible) continue;
           const distSq = distToSegmentSquared(enemy.x, enemy.y, p1.x, p1.y, p2.x, p2.y);
           if (distSq < (RADIUS + 0.5) ** 2) {
             if (!b.thornCooldowns[i] || b.thornCooldowns[i] <= 0) {
