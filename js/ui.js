@@ -150,4 +150,13 @@ function updateScene(balls, projectiles, traps) {
     if (img) {
       img.setAttribute('x', ball.x - RADIUS);
       img.setAttribute('y', ball.y - RADIUS);
-      const expectedTexture = ball.cryingTimer > 0 ? 'res/crying.png' : ball.def.texture
+      const expectedTexture = ball.cryingTimer > 0 ? 'res/crying.png' : ball.def.texture;
+      if (img.getAttribute('href') !== expectedTexture) img.setAttribute('href', expectedTexture);
+    }
+    
+    const text = g.querySelector('text');
+    text.setAttribute('x', ball.x);
+    text.setAttribute('y', ball.y);
+    text.textContent = Math.ceil(ball.hp);
+  }
+}
