@@ -33,15 +33,12 @@ async function initGame() {
     // 载入数据并绑定技能
     window.loadBallData(data);
     
-    // 动态填充下拉框
+    // 动态填充下拉框（不再默认选中任何球）
     populateDropdowns(data);
     
-    // 给下拉框绑定默认值
-    if (data['common']) typeA.value = 'common';
-    if (data['spear']) typeB.value = 'spear';
-    
-    // 初始化第一把场景
-    spawnBalls();
+    // 初始化时，清空场地，不生成任何球
+    balls = [];
+    buildScene(balls);
   } catch (err) {
     console.error("Failed to load balls.json.", err);
     alert("Failed to load game data. If running locally, please use a local server (e.g., Live Server).");
@@ -52,16 +49,26 @@ function populateDropdowns(data) {
   typeA.innerHTML = '';
   typeB.innerHTML = '';
   
+  // 添加一个默认的空选项
+  const emptyOptA = new Option('--- Select ---', '');
+  emptyOptA.disabled = true;
+  emptyOptA.selected = true;
+  typeA.add(emptyOptA);
+
+  const emptyOptB = new Option('--- Select ---', '');
+  emptyOptB.disabled = true;
+  emptyOptB.selected = true;
+  typeB.add(emptyOptB);
+  
   for (const key in data) {
     const name = data[key].name;
-    // A 球默认选中
+    
+    // A 球选项
     const optA = new Option(name, key);
-    if (key === 'common') optA.selected = true;
     typeA.add(optA);
     
-    // B 球默认选中
+    // B 球选项
     const optB = new Option(name, key);
-    if (key === 'spear') optB.selected = true;
     typeB.add(optB);
   }
 }
@@ -73,15 +80,18 @@ function spawnBalls() {
   window.lasers = [];
   window.flashRed = false;
   
-  // 如果下拉框还没加载好，直接返回
-  if (!typeA.value || !typeB.value) return;
-
+  // 如果没选球，就不生成
   let multiplier = parseFloat(speedInput.value);
   if (isNaN(multiplier) || multiplier <= 0) multiplier = 1; 
   window.V_BASE = 18 * multiplier; 
 
-  if (enableA.checked && typeA.value) balls.push(randomBall(typeA.value));
-  if (enableB.checked && typeB.value) balls.push(randomBall(typeB.value));
+  // 确保用户选了球才生成
+  if (enableA.checked && typeA.value && typeA.value !== '') {
+    balls.push(randomBall(typeA.value));
+  }
+  if (enableB.checked && typeB.value && typeB.value !== '') {
+    balls.push(randomBall(typeB.value));
+  }
 
   buildScene(balls);
 }
@@ -122,6 +132,12 @@ function loop(t) {
 }
 
 function startGame() {
+  // 如果玩家没选球，弹个提示或者直接不开始（这里直接不开始）
+  if ((enableA.checked && !typeA.value) || (enableB.checked && !typeB.value)) {
+    alert("Please select a ball type for both players before starting.");
+    return;
+  }
+
   if (rafId) cancelAnimationFrame(rafId);
   gameoverOverlay.classList.add('hidden');
   pauseOverlay.classList.add('hidden');
@@ -158,6 +174,8 @@ function quitToMenu() {
   window.traps = [];
   window.lasers = [];
   window.flashRed = false;
+  
+  // 清空场地，不生成任何球
   buildScene(balls);
   pauseOverlay.classList.add('hidden');
   gameoverOverlay.classList.add('hidden');
