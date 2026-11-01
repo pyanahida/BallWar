@@ -10,7 +10,7 @@ function distToSegSq(px, py, x1, y1, x2, y2) {
 
 window.Systems.push({
   update: function(balls, dt) {
-    // 生成陷阱
+    // 1. 陷阱球生成
     for (const b of balls) {
       if (b.alive && b.type === 'trap') {
         b.trapTimer -= dt;
@@ -26,11 +26,12 @@ window.Systems.push({
       }
     }
 
-    // 陷阱更新
+    // 2. 陷阱伤害更新
     for (let i = window.traps.length - 1; i >= 0; i--) {
       const trap = window.traps[i];
       trap.timer -= dt;
       if (trap.timer <= 0) { window.traps.splice(i, 1); continue; }
+      
       let triggered = false;
       for (const b of balls) {
         if (!b.alive || b.invincible || b.id === trap.ownerId) continue;
@@ -43,12 +44,14 @@ window.Systems.push({
       if (triggered) window.traps.splice(i, 1);
     }
 
-    // 蛛丝与荆棘
+    // 3. 蛛丝与荆棘伤害
     for (const b of balls) {
+      // 蛛丝
       if (b.type === 'spider_web' && b.webs) {
         for (let i = b.webs.length - 1; i >= 0; i--) {
           const web = b.webs[i];
           if (web.cooldown > 0) web.cooldown -= dt * 1000;
+          
           for (const enemy of balls) {
             if (enemy === b || !enemy.alive || enemy.invincible) continue;
             if (distToSegSq(enemy.x, enemy.y, b.x, b.y, web.x, web.y) < (RADIUS + 0.5) ** 2) {
@@ -62,6 +65,7 @@ window.Systems.push({
         }
       }
 
+      // 荆棘
       if (b.type === 'thorns' && b.thornPoints) {
         for (let i = 0; i < b.thornCooldowns.length; i++) {
           if (b.thornCooldowns[i] > 0) b.thornCooldowns[i] = Math.max(0, b.thornCooldowns[i] - dt);
