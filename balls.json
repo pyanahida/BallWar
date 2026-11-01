@@ -11,5 +11,6 @@
   "glass_cannon": { "name": "Glass Cannon", "hp": 15, "damage": 10, "texture": "res/glass_cannon.png" },
   "briefcase": { "name": "Briefcase", "hp": 100, "damage": 1, "texture": "res/briefcase.png" },
   "vampire": { "name": "Vampire", "hp": 100, "damage": 1, "texture": "res/vampire.png" },
-  "heavy_hammer": { "name": "Heavy Hammer", "hp": 100, "damage": 1, "texture": "res/heavy_hammer.png" }
+  "heavy_hammer": { "name": "Heavy Hammer", "hp": 100, "damage": 1, "texture": "res/heavy_hammer.png" },
+  "king": { "name": "King", "hp": 100, "damage": 1, "texture": "res/king.png" }
 }
