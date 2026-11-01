@@ -20,7 +20,8 @@ function createBall(typeKey, x, y, angle) {
     maxHp: def.hp,
     damage: def.damage,
     alive: true,
-    cryingTimer: 0
+    cryingTimer: 0,
+    invincible: false // 用于重锤
   };
   
   if (typeKey === 'spider_web') ball.webs = [];
@@ -30,7 +31,13 @@ function createBall(typeKey, x, y, angle) {
     ball.thornPoints = [];
     ball.thornCooldowns = [];
   }
-  if (typeKey === 'briefcase') ball.laserTimer = 5; // 公文包5秒计时器
+  if (typeKey === 'briefcase') ball.laserTimer = 5;
+  
+  // 重锤状态机
+  if (typeKey === 'heavy_hammer') {
+    ball.hhPhase = 'move'; // 'move' 或 'idle'
+    ball.hhTimer = 4;      // 初始4秒移动
+  }
   
   return ball;
 }
