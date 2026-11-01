@@ -33,18 +33,23 @@ function createBall(typeKey, x, y, angle) {
     ball.thornCooldowns = [];
   }
   if (typeKey === 'briefcase') ball.laserTimer = 5;
+  
+  // 重锤状态机
   if (typeKey === 'heavy_hammer') {
     ball.hhPhase = 'move';
     ball.hhTimer = 4;
   }
+  
+  // 国王召唤计时器
   if (typeKey === 'king') {
-    ball.summonTimer = 5; // 国王召唤倒计时
-    ball.kingId = ball.id; // 记录自己的 ID
+    ball.summonTimer = 5;
   }
+  
+  // 卫兵初始化
   if (typeKey === 'guard') {
-    ball.radius = GUARD_RADIUS; // 卫兵独立半径
-    ball.shields = 3;           // 3 个护盾
-    ball.kingId = arguments[3]; // 记录国王的 ID
+    ball.radius = GUARD_RADIUS;
+    ball.shields = 3;
+    ball.kingId = arguments[3]; // 继承国王的 ID
   }
   
   return ball;
