@@ -13,24 +13,18 @@
   <div id="controls">
     <div class="player-setup">
       <label>Ball A</label>
-      <!-- 强制加入一个空的默认选中项 -->
-      <select id="typeA">
-        <option value="" disabled selected>--- Select ---</option>
-      </select>
+      <select id="typeA"></select>
       <label class="toggle">
-        <input type="checkbox" id="enableA" checked>
+        <input type="checkbox" id="enableA">
         <span class="slider"></span>
       </label>
     </div>
 
     <div class="player-setup">
       <label>Ball B</label>
-      <!-- 强制加入一个空的默认选中项 -->
-      <select id="typeB">
-        <option value="" disabled selected>--- Select ---</option>
-      </select>
+      <select id="typeB"></select>
       <label class="toggle">
-        <input type="checkbox" id="enableB" checked>
+        <input type="checkbox" id="enableB">
         <span class="slider"></span>
       </label>
     </div>
@@ -75,9 +69,6 @@
 
 <script src="js/effects.js"></script>
 <script src="js/ball.js"></script>
-<script src="js/systems/state.js"></script>
-<script src="js/systems/projectiles.js"></script>
-<script src="js/systems/zones.js"></script>
 <script src="js/physics.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/main.js"></script>
