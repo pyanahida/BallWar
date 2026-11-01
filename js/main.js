@@ -29,7 +29,6 @@ async function initGame() {
   try {
     const response = await fetch('balls.json');
     const data = await response.json();
-    
     window.loadBallData(data);
     populateDropdowns(data);
     
@@ -37,7 +36,7 @@ async function initGame() {
     buildScene(balls);
   } catch (err) {
     console.error("Failed to load balls.json.", err);
-    alert("Failed to load game data. If running locally, please use a local server.");
+    alert("Failed to load game data. Please use a local server.");
   }
 }
 
@@ -58,7 +57,6 @@ function populateDropdowns(data) {
     typeA.add(new Option(name, key));
     typeB.add(new Option(name, key));
   }
-  
   typeA.value = '';
   typeB.value = '';
 }
@@ -74,12 +72,8 @@ function spawnBalls() {
   if (isNaN(multiplier) || multiplier <= 0) multiplier = 1; 
   window.V_BASE = 18 * multiplier; 
 
-  if (enableA.checked && typeA.value && typeA.value !== '') {
-    balls.push(randomBall(typeA.value));
-  }
-  if (enableB.checked && typeB.value && typeB.value !== '') {
-    balls.push(randomBall(typeB.value));
-  }
+  if (enableA.checked && typeA.value && typeA.value !== '') balls.push(randomBall(typeA.value));
+  if (enableB.checked && typeB.value && typeB.value !== '') balls.push(randomBall(typeB.value));
 
   buildScene(balls);
 }
@@ -89,7 +83,7 @@ function checkWinCondition() {
   
   const aliveBalls = balls.filter(b => b.alive);
   
-  // 判断主要球（排除卫兵等召唤物）是否存活
+  // 过滤掉卫兵，只看主体球死没死
   const mainBallA = aliveBalls.find(b => b.type === typeA.value);
   const mainBallB = aliveBalls.find(b => b.type === typeB.value);
 
@@ -116,7 +110,6 @@ function loop(t) {
     if (lastTime === 0) lastTime = t;
     let dt = (t - lastTime) / 1000;
     lastTime = t;
-    
     if (dt > 0.05) dt = 0.05;
 
     stepAll(balls, dt);
@@ -125,7 +118,6 @@ function loop(t) {
   } else {
     lastTime = t;
   }
-
   rafId = requestAnimationFrame(loop);
 }
 
@@ -134,7 +126,6 @@ function startGame() {
     alert("Please select a ball type for both players before starting.");
     return;
   }
-
   if (rafId) cancelAnimationFrame(rafId);
   gameoverOverlay.classList.add('hidden');
   pauseOverlay.classList.add('hidden');
@@ -143,7 +134,6 @@ function startGame() {
   gameState = 'playing';
   lastTime = 0;
   rafId = requestAnimationFrame(loop);
-
   startBtn.style.display = 'none';
   pauseBtn.style.display = 'block';
   pauseBtn.textContent = 'Pause';
@@ -165,29 +155,22 @@ function resumeGame() {
 function quitToMenu() {
   gameState = 'idle';
   if (rafId) cancelAnimationFrame(rafId);
-  
   balls = [];
   window.projectiles = [];
   window.traps = [];
   window.lasers = [];
   window.flashRed = false;
-  
   buildScene(balls);
   pauseOverlay.classList.add('hidden');
   gameoverOverlay.classList.add('hidden');
-  
   startBtn.style.display = 'block';
   pauseBtn.style.display = 'none';
-  
   typeA.value = '';
   typeB.value = '';
 }
 
 startBtn.addEventListener('click', startGame);
-pauseBtn.addEventListener('click', () => {
-  if (gameState === 'playing') pauseGame();
-});
-
+pauseBtn.addEventListener('click', () => { if (gameState === 'playing') pauseGame(); });
 resumeBtn.addEventListener('click', resumeGame);
 quitBtn.addEventListener('click', quitToMenu);
 backToMenuBtn.addEventListener('click', quitToMenu);
