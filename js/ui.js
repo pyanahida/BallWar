@@ -1,6 +1,7 @@
 // SVG rendering
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const arena = document.getElementById('arena');
+const damageFlash = document.getElementById('damageFlash');
 
 function buildScene(balls) {
   arena.innerHTML = '';
@@ -47,8 +48,16 @@ function buildScene(balls) {
 }
 
 function updateScene(balls, projectiles, traps) {
-  arena.querySelectorAll('.dynamic-element').forEach(el => el.remove());
+  // 处理重锤的闪红特效
+  if (window.flashRed) {
+    window.flashRed = false;
+    damageFlash.style.opacity = '1';
+    setTimeout(() => {
+      damageFlash.style.opacity = '0';
+    }, 200); // 持续 0.2s
+  }
 
+  arena.querySelectorAll('.dynamic-element').forEach(el => el.remove());
   const firstBallG = arena.querySelector('g[data-id]');
 
   // 渲染蛛丝
@@ -124,7 +133,7 @@ function updateScene(balls, projectiles, traps) {
     line.setAttribute('y1', laser.y1);
     line.setAttribute('x2', laser.x2);
     line.setAttribute('y2', laser.y2);
-    line.setAttribute('stroke', '#888888'); // 灰色
+    line.setAttribute('stroke', '#888888');
     line.setAttribute('stroke-width', '0.4');
     line.setAttribute('class', 'dynamic-element');
     if (firstBallG) arena.insertBefore(line, firstBallG);
@@ -136,16 +145,9 @@ function updateScene(balls, projectiles, traps) {
     const g = arena.querySelector(`g[data-id="${ball.id}"]`);
     if (!g) continue;
     if (!ball.alive) { g.style.display = 'none'; continue; }
+    
     const img = g.querySelector('image');
     if (img) {
       img.setAttribute('x', ball.x - RADIUS);
       img.setAttribute('y', ball.y - RADIUS);
-      const expectedTexture = ball.cryingTimer > 0 ? 'res/crying.png' : ball.def.texture;
-      if (img.getAttribute('href') !== expectedTexture) img.setAttribute('href', expectedTexture);
-    }
-    const text = g.querySelector('text');
-    text.setAttribute('x', ball.x);
-    text.setAttribute('y', ball.y);
-    text.textContent = Math.ceil(ball.hp);
-  }
-}
+      const expectedTexture = ball.cryingTimer > 0 ? 'res/crying.png' : ball.def.texture
