@@ -1,2 +1,3 @@
 res/.tempfile export-ignore
 .gitattributes export-ignore
+js/system/ export-ignore
