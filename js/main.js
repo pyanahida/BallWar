@@ -3,6 +3,8 @@ let balls = [];
 window.projectiles = [];
 window.traps = [];
 window.lasers = [];
+window.flashRed = false; // 控制背景闪红特效
+
 let lastTime = 0;
 let rafId = null;
 let gameState = 'idle'; // 'idle', 'playing', 'paused', 'gameover'
@@ -54,6 +56,7 @@ function spawnBalls() {
   window.projectiles = [];
   window.traps = [];
   window.lasers = [];
+  window.flashRed = false;
   
   let multiplier = parseFloat(speedInput.value);
   if (isNaN(multiplier) || multiplier <= 0) multiplier = 1; 
@@ -130,6 +133,7 @@ function quitToMenu() {
   window.projectiles = [];
   window.traps = [];
   window.lasers = [];
+  window.flashRed = false;
   buildScene(balls);
   pauseOverlay.classList.add('hidden');
   gameoverOverlay.classList.add('hidden');
