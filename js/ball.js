@@ -2,6 +2,7 @@
 const FIELD = { size: 100 };
 window.V_BASE = 18;
 const RADIUS = 7.5;
+const GUARD_RADIUS = 4; // 卫兵半径
 
 window.BALL_TYPES = {}; 
 let ballSeq = 0;
@@ -21,7 +22,7 @@ function createBall(typeKey, x, y, angle) {
     damage: def.damage,
     alive: true,
     cryingTimer: 0,
-    invincible: false // 用于重锤
+    invincible: false
   };
   
   if (typeKey === 'spider_web') ball.webs = [];
@@ -32,11 +33,18 @@ function createBall(typeKey, x, y, angle) {
     ball.thornCooldowns = [];
   }
   if (typeKey === 'briefcase') ball.laserTimer = 5;
-  
-  // 重锤状态机
   if (typeKey === 'heavy_hammer') {
-    ball.hhPhase = 'move'; // 'move' 或 'idle'
-    ball.hhTimer = 4;      // 初始4秒移动
+    ball.hhPhase = 'move';
+    ball.hhTimer = 4;
+  }
+  if (typeKey === 'king') {
+    ball.summonTimer = 5; // 国王召唤倒计时
+    ball.kingId = ball.id; // 记录自己的 ID
+  }
+  if (typeKey === 'guard') {
+    ball.radius = GUARD_RADIUS; // 卫兵独立半径
+    ball.shields = 3;           // 3 个护盾
+    ball.kingId = arguments[3]; // 记录国王的 ID
   }
   
   return ball;
