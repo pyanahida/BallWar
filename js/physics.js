@@ -64,15 +64,12 @@ function resolveBallCollision(a, b) {
 }
 
 function stepAll(balls, dt) {
-  // 调用所有注册的插件系统
   if (window.Systems) {
     for (const sys of window.Systems) sys.update(balls, dt);
   }
 
-  // 基础物理移动
   for (const b of balls) stepBall(b, dt);
 
-  // 基础球球碰撞
   for (let i = 0; i < balls.length; i++) {
     for (let j = i + 1; j < balls.length; j++) {
       resolveBallCollision(balls[i], balls[j]);
