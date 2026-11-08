@@ -14,20 +14,16 @@ function stepBall(ball, dt) {
   if (ball.cryingTimer > 0) return;
   if (ball.invincible) return;
 
-  const r = ball.radius || RADIUS;
-  const minB = r;
-  const maxB = FIELD.size - r;
-
   ball.x += ball.vx * dt;
   ball.y += ball.vy * dt;
 
   let bounced = false;
   let bounceX = 0, bounceY = 0;
 
-  if (ball.x < minB) { ball.x = minB; ball.vx = Math.abs(ball.vx); bounced = true; bounceX = 0; bounceY = ball.y; }
-  if (ball.x > maxB) { ball.x = maxB; ball.vx = -Math.abs(ball.vx); bounced = true; bounceX = FIELD.size; bounceY = ball.y; }
-  if (ball.y < minB) { ball.y = minB; ball.vy = Math.abs(ball.vy); bounced = true; bounceX = ball.x; bounceY = 0; }
-  if (ball.y > maxB) { ball.y = maxB; ball.vy = -Math.abs(ball.vy); bounced = true; bounceX = ball.x; bounceY = FIELD.size; }
+  if (ball.x < WALL_MIN) { ball.x = WALL_MIN; ball.vx = Math.abs(ball.vx); bounced = true; bounceX = 0; bounceY = ball.y; }
+  if (ball.x > WALL_MAX) { ball.x = WALL_MAX; ball.vx = -Math.abs(ball.vx); bounced = true; bounceX = FIELD.size; bounceY = ball.y; }
+  if (ball.y < WALL_MIN) { ball.y = WALL_MIN; ball.vy = Math.abs(ball.vy); bounced = true; bounceX = ball.x; bounceY = 0; }
+  if (ball.y > WALL_MAX) { ball.y = WALL_MAX; ball.vy = -Math.abs(ball.vy); bounced = true; bounceX = ball.x; bounceY = FIELD.size; }
 
   if (bounced && ball.def.onBounce) {
     ball.def.onBounce(ball, bounceX, bounceY);
@@ -39,63 +35,48 @@ function resolveBallCollision(a, b) {
   if (!a.alive || !b.alive) return;
   if (a.invincible || b.invincible) return;
 
-  // 卫兵互不碰撞，防止物理死锁
-  if (a.type === 'guard' && b.type === 'guard') return;
-  if ((a.type === 'guard' && b.type === 'king') || (a.type === 'king' && b.type === 'guard')) return;
-
-  const rA = a.radius || RADIUS;
-  const rB = b.radius || RADIUS;
   const dx = b.x - a.x;
   const dy = b.y - a.y;
   const dist = Math.hypot(dx, dy);
-  const minDist = rA + rB;
+  const minDist = RADIUS * 2;
   if (dist >= minDist || dist < 1e-6) return;
 
   const nx = dx / dist;
   const ny = dy / dist;
   const overlap = minDist - dist;
-
-  // 修复之前失去的伤害计算
-  let dmgToB = a.def.getDamage ? a.def.getDamage(a, b) : a.damage;
-  let dmgToA = b.def.getDamage ? b.def.getDamage(b, a) : b.damage;
-
-  if (b.type === 'one_way_mirror') dmgToB = 0;
-  if (a.type === 'one_way_mirror') dmgToA = 0;
-
-  if (dmgToB > 0) {
-    if (b.type === 'guard' && b.shields > 0 && Math.random() < 0.6) { b.shields--; dmgToB = 0; }
-    b.hp -= dmgToB;
-  }
-  if (dmgToA > 0) {
-    if (a.type === 'guard' && a.shields > 0 && Math.random() < 0.6) { a.shields--; dmgToA = 0; }
-    a.hp -= dmgToA;
-  }
-
-  if (a.def.onHit) a.def.onHit(a, b);
-  if (b.def.onHit) b.def.onHit(b, a);
-
-  if (a.hp <= 0) { a.hp = 0; a.alive = false; }
-  if (b.hp <= 0) { b.hp = 0; b.alive = false; }
-
-  // 分离位置（放在伤害之后，防止有些球在重叠时无限刷伤害）
-  a.x -= nx * overlap * (rB / (rA + rB));
-  a.y -= ny * overlap * (rB / (rA + rB));
-  b.x += nx * overlap * (rA / (rA + rB));
-  b.y += ny * overlap * (rA / (rA + rB));
+  a.x -= nx * overlap / 2;
+  a.y -= ny * overlap / 2;
+  b.x += nx * overlap / 2;
+  b.y += ny * overlap / 2;
 
   const rvx = b.vx - a.vx;
   const rvy = b.vy - a.vy;
   const velAlongNormal = rvx * nx + rvy * ny;
   if (velAlongNormal > 0) return;
 
-  const impulse = -velAlongNormal * 1.5;
-  a.vx -= impulse * (rB / (rA + rB)) * nx;
-  a.vy -= impulse * (rB / (rA + rB)) * ny;
-  b.vx += impulse * (rA / (rA + rB)) * nx;
-  b.vy += impulse * (rA / (rA + rB)) * ny;
+  const impulse = -velAlongNormal;
+  a.vx -= impulse * nx;
+  a.vy -= impulse * ny;
+  b.vx += impulse * nx;
+  b.vy += impulse * ny;
 
   normalizeVelocity(a);
   normalizeVelocity(b);
+
+  let dmgToB = a.def.getDamage ? a.def.getDamage(a, b) : a.damage;
+  let dmgToA = b.def.getDamage ? b.def.getDamage(b, a) : b.damage;
+
+  if (b.type === 'one_way_mirror') dmgToB = 0;
+  if (a.type === 'one_way_mirror') dmgToA = 0;
+
+  b.hp -= dmgToB;
+  a.hp -= dmgToA;
+
+  if (a.def.onHit) a.def.onHit(a, b);
+  if (b.def.onHit) b.def.onHit(b, a);
+
+  if (a.hp <= 0) { a.hp = 0; a.alive = false; }
+  if (b.hp <= 0) { b.hp = 0; b.alive = false; }
 }
 
 function distToSegmentSquared(px, py, x1, y1, x2, y2) {
@@ -106,12 +87,27 @@ function distToSegmentSquared(px, py, x1, y1, x2, y2) {
   return (px - (x1 + t * (x2 - x1))) ** 2 + (py - (y1 + t * (y2 - y1))) ** 2;
 }
 
+window.trap2s = [];
+
 function stepAll(balls, dt) {
-  // 状态机与国王召唤
+  // 状态机、召唤、亡语
   for (const b of balls) {
     if (!b.alive) continue;
     if (b.cryingTimer > 0) { b.cryingTimer -= dt; if (b.cryingTimer < 0) b.cryingTimer = 0; }
     
+    // 苦力怕亡语
+    if (b.type === 'creeper' && b.hp <= 10 && !b.exploded) {
+      b.exploded = true;
+      // 全屏爆炸特效复用闪红
+      window.flashRed = true;
+      for (const enemy of balls) {
+        if (enemy !== b && enemy.alive) {
+          enemy.hp -= 20;
+          if (enemy.hp <= 0) { enemy.hp = 0; enemy.alive = false; }
+        }
+      }
+    }
+
     if (b.type === 'heavy_hammer') {
       b.hhTimer -= dt;
       if (b.hhPhase === 'move' && b.hhTimer <= 0) {
@@ -132,35 +128,9 @@ function stepAll(balls, dt) {
         if (hit) window.flashRed = true;
       }
     }
-
-    if (b.type === 'king') {
-      b.summonTimer -= dt;
-      if (b.summonTimer <= 0) {
-        b.summonTimer = 5;
-        for (let i = 0; i < 5; i++) {
-          const margin = GUARD_RADIUS + 1;
-          let gx, gy, valid;
-          do {
-            const angle = Math.random() * Math.PI * 2;
-            const dist = Math.random() * 15 + 10;
-            gx = b.x + Math.cos(angle) * dist;
-            gy = b.y + Math.sin(angle) * dist;
-            valid = gx >= margin && gx <= FIELD.size - margin && gy >= margin && gy <= FIELD.size - margin;
-          } while (!valid);
-          const guard = createBall('guard', gx, gy, Math.random() * Math.PI * 2);
-          guard.kingId = b.id;
-          balls.push(guard);
-        }
-      }
-    }
   }
 
-  const kingAlive = balls.some(b => b.type === 'king' && b.alive);
-  if (!kingAlive) {
-    for (const b of balls) { if (b.type === 'guard' && b.alive) b.alive = false; }
-  }
-
-  // 发射逻辑
+  // 发射器（洋葱、射线、陷阱、Trap2）
   for (const b of balls) {
     if (!b.alive) continue;
     if (b.type === 'onion') {
@@ -205,6 +175,14 @@ function stepAll(balls, dt) {
         window.traps.push({ x: margin + Math.random()*(FIELD.size - margin*2), y: margin + Math.random()*(FIELD.size - margin*2), radius: 20, timer: 1.0, ownerId: b.id });
       }
     }
+    if (b.type === 'trap2') {
+      b.trap2Timer -= dt;
+      if (b.trap2Timer <= 0) {
+        b.trap2Timer = 5;
+        const margin = 20;
+        window.trap2s.push({ x: margin + Math.random()*(FIELD.size - margin*2), y: margin + Math.random()*(FIELD.size - margin*2), radius: 20, timer: 3.0, ownerId: b.id });
+      }
+    }
   }
 
   // 实体更新
@@ -215,8 +193,7 @@ function stepAll(balls, dt) {
     let hit = false;
     for (const b of balls) {
       if (!b.alive || b.invincible || p.ownerId === b.id) continue;
-      const r = b.radius || RADIUS;
-      if (Math.hypot(p.x - b.x, p.y - b.y) < r + p.radius) {
+      if (Math.hypot(p.x - b.x, p.y - b.y) < RADIUS + p.radius) {
         b.hp -= 2; b.cryingTimer = 2;
         if (b.hp <= 0) { b.hp = 0; b.alive = false; }
         hit = true; break;
@@ -231,8 +208,7 @@ function stepAll(balls, dt) {
     if (laser.timer <= 0) { window.lasers.splice(i, 1); continue; }
     for (const b of balls) {
       if (!b.alive || b.invincible || b.id === laser.ownerId) continue;
-      const r = b.radius || RADIUS;
-      if (distToSegmentSquared(b.x, b.y, laser.x1, laser.y1, laser.x2, laser.y2) < r * r) {
+      if (distToSegmentSquared(b.x, b.y, laser.x1, laser.y1, laser.x2, laser.y2) < RADIUS * RADIUS) {
         b.hp -= 3;
         if (b.hp <= 0) { b.hp = 0; b.alive = false; }
         const dx = laser.x2 - laser.x1, dy = laser.y2 - laser.y1;
@@ -240,7 +216,7 @@ function stepAll(balls, dt) {
         const dot = b.vx * nx + b.vy * ny;
         b.vx -= 2 * dot * nx; b.vy -= 2 * dot * ny;
         const sign = Math.sign(dot) || 1;
-        b.x += nx * (r + 0.5) * sign; b.y += ny * (r + 0.5) * sign;
+        b.x += nx * (RADIUS + 0.5) * sign; b.y += ny * (RADIUS + 0.5) * sign;
       }
     }
   }
@@ -252,8 +228,7 @@ function stepAll(balls, dt) {
     let triggered = false;
     for (const b of balls) {
       if (!b.alive || b.invincible || b.id === trap.ownerId) continue;
-      const r = b.radius || RADIUS;
-      if (Math.hypot(trap.x - b.x, trap.y - b.y) < trap.radius + r) {
+      if (Math.hypot(trap.x - b.x, trap.y - b.y) < trap.radius + RADIUS) {
         b.hp -= 10;
         if (b.hp <= 0) { b.hp = 0; b.alive = false; }
         triggered = true; break;
@@ -262,6 +237,37 @@ function stepAll(balls, dt) {
     if (triggered) window.traps.splice(i, 1);
   }
 
+  // Trap2 牢笼判定
+  for (let i = window.trap2s.length - 1; i >= 0; i--) {
+    const t2 = window.trap2s[i];
+    t2.timer -= dt;
+    if (t2.timer <= 0) { window.trap2s.splice(i, 1); continue; }
+
+    for (const b of balls) {
+      if (!b.alive || b.invincible || b.id === t2.ownerId) continue;
+      
+      const distToCenter = Math.hypot(b.x - t2.x, b.y - t2.y);
+      
+      // 1. 困在内部：撞边缘（刚体碰撞半径 + 球半径）
+      if (distToCenter + RADIUS > t2.radius && distToCenter < t2.radius) {
+        // 强制推回内部
+        const nx = (b.x - t2.x) / distToCenter;
+        const ny = (b.y - t2.y) / distToCenter;
+        b.x = t2.x + nx * (t2.radius - RADIUS - 0.1);
+        b.y = t2.y + ny * (t2.radius - RADIUS - 0.1);
+        // 反弹速度
+        const dot = b.vx * nx + b.vy * ny;
+        if (dot > 0) {
+          b.vx -= 2 * dot * nx;
+          b.vy -= 2 * dot * ny;
+        }
+        b.hp -= 1;
+        if (b.hp <= 0) { b.hp = 0; b.alive = false; }
+      }
+    }
+  }
+
+  // 蛛丝/荆棘更新
   for (const b of balls) {
     if (b.type === 'spider_web' && b.webs) {
       for (let i = b.webs.length - 1; i >= 0; i--) {
@@ -269,8 +275,7 @@ function stepAll(balls, dt) {
         if (web.cooldown > 0) web.cooldown -= dt * 1000;
         for (const enemy of balls) {
           if (enemy === b || !enemy.alive || enemy.invincible) continue;
-          const r = enemy.radius || RADIUS;
-          if (distToSegmentSquared(enemy.x, enemy.y, b.x, b.y, web.x, web.y) < (r + 0.5) ** 2) {
+          if (distToSegmentSquared(enemy.x, enemy.y, b.x, b.y, web.x, web.y) < (RADIUS + 0.5) ** 2) {
             if (web.cooldown <= 0) {
               enemy.hp -= 1; web.hp -= 1; web.cooldown = 1000;
               if (enemy.hp <= 0) { enemy.hp = 0; enemy.alive = false; }
@@ -288,8 +293,7 @@ function stepAll(balls, dt) {
         const p1 = b.thornPoints[i], p2 = b.thornPoints[i + 1];
         for (const enemy of balls) {
           if (enemy === b || !enemy.alive || enemy.invincible) continue;
-          const r = enemy.radius || RADIUS;
-          if (distToSegmentSquared(enemy.x, enemy.y, p1.x, p1.y, p2.x, p2.y) < (r + 0.5) ** 2) {
+          if (distToSegmentSquared(enemy.x, enemy.y, p1.x, p1.y, p2.x, p2.y) < (RADIUS + 0.5) ** 2) {
             if (!b.thornCooldowns[i] || b.thornCooldowns[i] <= 0) {
               enemy.hp -= 2; b.thornCooldowns[i] = 0.4;
               if (enemy.hp <= 0) { enemy.hp = 0; enemy.alive = false; }
