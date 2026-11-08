@@ -3,6 +3,7 @@ let balls = [];
 window.projectiles = [];
 window.traps = [];
 window.lasers = [];
+window.trap2s = [];
 window.flashRed = false;
 
 let lastTime = 0;
@@ -31,12 +32,11 @@ async function initGame() {
     const data = await response.json();
     window.loadBallData(data);
     populateDropdowns(data);
-    
     balls = [];
     buildScene(balls);
   } catch (err) {
     console.error("Failed to load balls.json.", err);
-    alert("Failed to load game data. Please use a local server.");
+    alert("Failed to load game data.");
   }
 }
 
@@ -66,6 +66,7 @@ function spawnBalls() {
   window.projectiles = [];
   window.traps = [];
   window.lasers = [];
+  window.trap2s = [];
   window.flashRed = false;
   
   let multiplier = parseFloat(speedInput.value);
@@ -80,27 +81,16 @@ function spawnBalls() {
 
 function checkWinCondition() {
   if (balls.length <= 1) return;
-  
   const aliveBalls = balls.filter(b => b.alive);
-  
-  // 过滤掉卫兵，只看主体球死没死
-  const mainBallA = aliveBalls.find(b => b.type === typeA.value);
-  const mainBallB = aliveBalls.find(b => b.type === typeB.value);
-
-  if (!mainBallA && !mainBallB) {
+  if (aliveBalls.length === 1) {
+    gameState = 'gameover';
+    pauseBtn.style.display = 'none';
+    winnerText.textContent = `${aliveBalls[0].def.name} Wins!`;
+    gameoverOverlay.classList.remove('hidden');
+  } else if (aliveBalls.length === 0) {
     gameState = 'gameover';
     pauseBtn.style.display = 'none';
     winnerText.textContent = "Draw!";
-    gameoverOverlay.classList.remove('hidden');
-  } else if (!mainBallA) {
-    gameState = 'gameover';
-    pauseBtn.style.display = 'none';
-    winnerText.textContent = `${BALL_TYPES[typeB.value].name} Wins!`;
-    gameoverOverlay.classList.remove('hidden');
-  } else if (!mainBallB) {
-    gameState = 'gameover';
-    pauseBtn.style.display = 'none';
-    winnerText.textContent = `${BALL_TYPES[typeA.value].name} Wins!`;
     gameoverOverlay.classList.remove('hidden');
   }
 }
@@ -113,7 +103,7 @@ function loop(t) {
     if (dt > 0.05) dt = 0.05;
 
     stepAll(balls, dt);
-    updateScene(balls, window.projectiles, window.traps);
+    updateScene(balls, window.projectiles, window.traps, window.trap2s);
     checkWinCondition();
   } else {
     lastTime = t;
@@ -159,6 +149,7 @@ function quitToMenu() {
   window.projectiles = [];
   window.traps = [];
   window.lasers = [];
+  window.trap2s = [];
   window.flashRed = false;
   buildScene(balls);
   pauseOverlay.classList.add('hidden');
