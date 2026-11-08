@@ -2,7 +2,6 @@
 const FIELD = { size: 100 };
 window.V_BASE = 18;
 const RADIUS = 7.5;
-const GUARD_RADIUS = 4; // 卫兵半径
 
 window.BALL_TYPES = {}; 
 let ballSeq = 0;
@@ -28,28 +27,16 @@ function createBall(typeKey, x, y, angle) {
   if (typeKey === 'spider_web') ball.webs = [];
   if (typeKey === 'onion') ball.shootTimer = 3;
   if (typeKey === 'trap') ball.trapTimer = 4;
+  if (typeKey === 'trap2') ball.trap2Timer = 5; // 5秒生成
   if (typeKey === 'thorns') {
     ball.thornPoints = [];
     ball.thornCooldowns = [];
   }
   if (typeKey === 'briefcase') ball.laserTimer = 5;
   
-  // 重锤状态机
   if (typeKey === 'heavy_hammer') {
     ball.hhPhase = 'move';
     ball.hhTimer = 4;
-  }
-  
-  // 国王召唤计时器
-  if (typeKey === 'king') {
-    ball.summonTimer = 5;
-  }
-  
-  // 卫兵初始化
-  if (typeKey === 'guard') {
-    ball.radius = GUARD_RADIUS;
-    ball.shields = 3;
-    ball.kingId = arguments[3]; // 继承国王的 ID
   }
   
   return ball;
