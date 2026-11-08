@@ -23,37 +23,14 @@ function createBallDOM(ball) {
   const g = document.createElementNS(SVG_NS, 'g');
   g.setAttribute('data-id', ball.id);
 
-  if (ball.type === 'guard') {
-    const circle = document.createElementNS(SVG_NS, 'circle');
-    circle.setAttribute('r', GUARD_RADIUS);
-    circle.setAttribute('fill', '#ff0000');
-    circle.setAttribute('stroke', '#ffffff');
-    circle.setAttribute('stroke-width', '0.5');
-    circle.setAttribute('cx', ball.x);
-    circle.setAttribute('cy', ball.y);
-    g.appendChild(circle);
-    
-    if (ball.shields > 0) {
-      const shieldRing = document.createElementNS(SVG_NS, 'circle');
-      shieldRing.setAttribute('r', GUARD_RADIUS + 1);
-      shieldRing.setAttribute('fill', 'none');
-      shieldRing.setAttribute('stroke', '#00ffff');
-      shieldRing.setAttribute('stroke-width', '0.5');
-      shieldRing.setAttribute('cx', ball.x);
-      shieldRing.setAttribute('cy', ball.y);
-      shieldRing.setAttribute('class', 'shield-ring');
-      g.appendChild(shieldRing);
-    }
-  } else {
-    const img = document.createElementNS(SVG_NS, 'image');
-    img.setAttribute('href', ball.def.texture);
-    img.setAttribute('width', RADIUS * 2);
-    img.setAttribute('height', RADIUS * 2);
-    img.setAttribute('preserveAspectRatio', 'xMidYMid slice');
-    img.setAttribute('x', ball.x - RADIUS);
-    img.setAttribute('y', ball.y - RADIUS);
-    g.appendChild(img);
-  }
+  const img = document.createElementNS(SVG_NS, 'image');
+  img.setAttribute('href', ball.def.texture);
+  img.setAttribute('width', RADIUS * 2);
+  img.setAttribute('height', RADIUS * 2);
+  img.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+  img.setAttribute('x', ball.x - RADIUS);
+  img.setAttribute('y', ball.y - RADIUS);
+  g.appendChild(img);
 
   const text = document.createElementNS(SVG_NS, 'text');
   text.setAttribute('text-anchor', 'middle');
@@ -72,7 +49,7 @@ function createBallDOM(ball) {
   arena.appendChild(g);
 }
 
-function updateScene(balls, projectiles, traps) {
+function updateScene(balls, projectiles, traps, trap2s) {
   if (window.flashRed) {
     window.flashRed = false;
     damageFlash.style.opacity = '1';
@@ -118,13 +95,26 @@ function updateScene(balls, projectiles, traps) {
     }
   }
 
-  // 渲染陷阱
+  // 渲染老陷阱
   for (const trap of traps) {
     const circle = document.createElementNS(SVG_NS, 'circle');
     circle.setAttribute('cx', trap.x); circle.setAttribute('cy', trap.y);
     circle.setAttribute('r', trap.radius);
     circle.setAttribute('fill', '#D00');
     circle.setAttribute('opacity', (trap.timer / 1.0) * 0.6);
+    circle.setAttribute('class', 'dynamic-element');
+    if (firstBallG) arena.insertBefore(circle, firstBallG);
+    else arena.appendChild(circle);
+  }
+
+  // 渲染 Trap2 牢笼
+  for (const trap of trap2s) {
+    const circle = document.createElementNS(SVG_NS, 'circle');
+    circle.setAttribute('cx', trap.x); circle.setAttribute('cy', trap.y);
+    circle.setAttribute('r', trap.radius);
+    circle.setAttribute('fill', 'none');
+    circle.setAttribute('stroke', '#D00');
+    circle.setAttribute('stroke-width', '1');
     circle.setAttribute('class', 'dynamic-element');
     if (firstBallG) arena.insertBefore(circle, firstBallG);
     else arena.appendChild(circle);
@@ -155,43 +145,16 @@ function updateScene(balls, projectiles, traps) {
 
   // 渲染球及状态
   for (const ball of balls) {
-    let g = arena.querySelector(`g[data-id="${ball.id}"]`);
-    if (!g && ball.alive) {
-      createBallDOM(ball);
-      g = arena.querySelector(`g[data-id="${ball.id}"]`);
-    }
+    const g = arena.querySelector(`g[data-id="${ball.id}"]`);
     if (!g) continue;
     if (!ball.alive) { g.style.display = 'none'; continue; }
     
-    if (ball.type === 'guard') {
-      const circle = g.querySelector('circle');
-      circle.setAttribute('cx', ball.x);
-      circle.setAttribute('cy', ball.y);
-      
-      let shieldRing = g.querySelector('.shield-ring');
-      if (ball.shields > 0) {
-        if (!shieldRing) {
-          shieldRing = document.createElementNS(SVG_NS, 'circle');
-          shieldRing.setAttribute('r', GUARD_RADIUS + 1);
-          shieldRing.setAttribute('fill', 'none');
-          shieldRing.setAttribute('stroke', '#00ffff');
-          shieldRing.setAttribute('stroke-width', '0.5');
-          shieldRing.setAttribute('class', 'shield-ring');
-          g.insertBefore(shieldRing, g.querySelector('text'));
-        }
-        shieldRing.setAttribute('cx', ball.x);
-        shieldRing.setAttribute('cy', ball.y);
-      } else if (shieldRing) {
-        shieldRing.remove();
-      }
-    } else {
-      const img = g.querySelector('image');
-      if (img) {
-        img.setAttribute('x', ball.x - RADIUS);
-        img.setAttribute('y', ball.y - RADIUS);
-        const expectedTexture = ball.cryingTimer > 0 ? 'res/crying.png' : ball.def.texture;
-        if (img.getAttribute('href') !== expectedTexture) img.setAttribute('href', expectedTexture);
-      }
+    const img = g.querySelector('image');
+    if (img) {
+      img.setAttribute('x', ball.x - RADIUS);
+      img.setAttribute('y', ball.y - RADIUS);
+      const expectedTexture = ball.cryingTimer > 0 ? 'res/crying.png' : ball.def.texture;
+      if (img.getAttribute('href') !== expectedTexture) img.setAttribute('href', expectedTexture);
     }
     
     const text = g.querySelector('text');
