@@ -7,10 +7,11 @@
   "spider_web": { "name": "Spider Web", "hp": 100, "damage": 0, "texture": "res/spider_web.png" },
   "onion": { "name": "Onion", "hp": 100, "damage": 5, "texture": "res/onion.png" },
   "trap": { "name": "Trap", "hp": 100, "damage": 1, "texture": "res/trap.png" },
+  "trap2": { "name": "Trap 2", "hp": 100, "damage": 1, "texture": "res/trap2.png" },
   "thorns": { "name": "Thorns", "hp": 100, "damage": 1, "texture": "res/thorns.png" },
   "glass_cannon": { "name": "Glass Cannon", "hp": 15, "damage": 10, "texture": "res/glass_cannon.png" },
   "briefcase": { "name": "Briefcase", "hp": 100, "damage": 1, "texture": "res/briefcase.png" },
   "vampire": { "name": "Vampire", "hp": 100, "damage": 1, "texture": "res/vampire.png" },
   "heavy_hammer": { "name": "Heavy Hammer", "hp": 100, "damage": 1, "texture": "res/heavy_hammer.png" },
-  "king": { "name": "King", "hp": 100, "damage": 1, "texture": "res/king.png" }
+  "creeper": { "name": "Creeper", "hp": 100, "damage": 1, "texture": "res/creeper.png" }
 }
